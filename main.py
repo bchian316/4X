@@ -51,7 +51,7 @@ flags = pygame.DOUBLEBUF
 
 # Set the display mode on the chosen display
 screen = pygame.display.set_mode((SCREENLENGTH, SCREENHEIGHT), flags=flags, display=display_index)# Game code goes here
-player_alpha_shade = 100
+player_alpha_shade = 70
 transparent_screen = pygame.Surface((SCREENLENGTH, SCREENHEIGHT), pygame.SRCALPHA)
 transparent_screen.set_alpha(player_alpha_shade)
 #make sure transparent_screen.blit goes below all displays that are drawn on it
@@ -70,9 +70,9 @@ status = "home"
 #for images that that don't undergo these transformations, use the original image as the image to transform to save code length
 
 #break
-print(pygame.font.get_fonts())
+#print(pygame.font.get_fonts())
 #good fonts: harrington, 
-def text(size, message, color, textx, texty, alignx = "left", aligny = "top", font = "chiller"):
+def text(size, message, color, textx, texty, alignx = "left", aligny = "top", font = "harrington"):
   myfont = pygame.font.SysFont(font, size)
   text_width, text_height = myfont.size(message)
   text_surface = myfont.render(message, True, color)
@@ -232,13 +232,63 @@ hex_size = 100
 offset_x = 250
 offset_y = 100
 
+class Location:
+  plains_img = pygame.image.load("terrain/plains.png").convert_alpha()
+  forest_img = pygame.image.load("terrain/forest.png").convert_alpha()
+  water_img = pygame.image.load("terrain/water.png").convert_alpha()
+  ocean_img = pygame.image.load("terrain/ocean.png").convert_alpha()
+  mountain_img = pygame.image.load("terrain/mountain.png").convert_alpha()
+  def __init__(self, coordx, coordy, terrain, features):
+    self.terrain = terrain
+    self.find_img()
+    self.features = features
+    self.coord_x = coordx
+    self.coord_y = coordy
+    self.display_x = (self.coord_y - 1)*(-hex_size/4)*sqrt(3)
+    self.display_y = (self.coord_y - 1)*(hex_size*0.75)
+    #for every x:
+    self.display_x += (self.coord_x - 1)*(hex_size/2)*sqrt(3)
+      #incorporate offsets
+
+  def find_img(self):
+    if self.terrain == "plains":
+      self.img = Location.plains_img
+    elif self.terrain == "forest":
+      self.img = Location.forest_img
+    elif self.terrain == "mountain":
+      self.img = Location.mountain_img
+    elif self.terrain == "water":
+      self.img = Location.water_img
+    elif self.terrain == "ocean":
+      self.img = Location.ocean_img
+    else:
+      #this is a void
+      pass
+
+  def display(self, custom = None):
+    if custom != None:
+      coords = custom
+    else:
+      coords = (self.display_x + offset_x, self.display_y + offset_y)
+    try:
+      screen.blit(self.img, coords)
+    except:
+      pass
+    if "crop" in self.features:
+      screen.blit(crop_img, coords)
+    elif "harvested crop" in self.features:
+      screen.blit(harvested_crop_img, coords)
+    if "seaweed" in self.features:
+      screen.blit(seaweed_img, coords)
+    if "villages" in self.features:
+      screen.blit(village_img, coords)
+
 #lets make the map a constant size (4 side length: hexagon) = 37 tiles
 #lets make 9 diagonal columns because there are 2x-1 columns when x is side length
 #the map will be the constant variable that revolves around all the players
 #it will show the terrain of every tile in the game
 #MAP = [4 items, 5 items, 6, 7, 6, 5, 4] because there is a side length of 4
-
-MAP = [["plains", "plains", "mountain", "plains", "forest", "", "", "", ""], 
+TERRAIN = [["plains", "plains", "mountain", "plains", "forest", "", "", "", ""], 
        ["mountain", "plains", "plains", "plains", "forest", "forest", "", "", ""], 
        ["plains", "plains", "mountain", "plains", "plains", "mountain", "forest", "", ""], 
        ["plains", "plains", "plains", "plains", "mountain", "forest", "forest", "forest", ""], 
@@ -248,19 +298,34 @@ MAP = [["plains", "plains", "mountain", "plains", "forest", "", "", "", ""],
        ["", "", "", "water", "water", "water", "water", "water", "water"], 
        ["", "", "", "", "ocean", "ocean", "ocean", "ocean", "ocean"]]
 #this is the side length of the map
-map_length = len(MAP)-1
+map_length = len(TERRAIN)-1
 #useless for now
 crop = [[5, 1], [5, 2], [6, 2], [3, 3]]
 harvested_crop = []
 seaweed = [[6, 7], [7, 7], [8, 7], [6, 8], [7, 8]]
 villages = [[0, 2], [1, 0], [2, 4], [5, 1], [5, 7], [6, 6], [3, 7]]
-
+MAP = []
+#configure map
+for row in enumerate(TERRAIN):
+  coordy = row[0]
+  MAP.append([])
+  for tile in enumerate(row[1]):
+    coordx = tile[0]
+    features = []
+    if [coordx, coordy] in crop:
+      features.append("crop")
+    if [coordx, coordy] in harvested_crop:
+      features.append("harvested crop")
+    if [coordx, coordy] in seaweed:
+      features.append("seaweed")
+    if [coordx, coordy] in villages:
+      features.append("village")
+    MAP[coordy].append(Location(coordx, coordy, tile[1], features))
+print(MAP)
 #important variables for selection and stuff
 selected_object = None
 selected_collision_range = 75
 #this is the circle diameter for checking if the player clicked on something
-location_x = 0
-location_y = 0
 #to make stat display easier
 selected_object_display = (0, 50)
 text_display_size = 20
@@ -273,12 +338,6 @@ selection_frame = pygame.image.load("selection frame.png").convert_alpha()
 production_frame = pygame.image.load("production frame.png").convert_alpha()
 #reset selected_unit after player turn is done to prevent other players from controlling a unit that's not theirs
 #terrain images
-
-plains_img = pygame.image.load("terrain/plains.png").convert_alpha()
-forest_img = pygame.image.load("terrain/forest.png").convert_alpha()
-water_img = pygame.image.load("terrain/water.png").convert_alpha()
-ocean_img = pygame.image.load("terrain/ocean.png").convert_alpha()
-mountain_img = pygame.image.load("terrain/mountain.png").convert_alpha()
 #selected images
 unit_select_img = pygame.image.load("selection/owns select.png").convert_alpha()
 building_select_img = pygame.transform.scale(unit_select_img, (75, 75)).convert_alpha()
@@ -301,43 +360,17 @@ crop_img = pygame.image.load("terrain/crop.png").convert_alpha()
 harvested_crop_img = pygame.image.load("terrain/harvested crop.png").convert_alpha()
 seaweed_img = pygame.image.load("terrain/seaweed.png").convert_alpha()
 village_img = pygame.image.load("terrain/village.png").convert_alpha()
-def display_map_hex(map, food, seaweed, offset_x, offset_y):
+def display_map_hex(map):
   #use offsets to move the entire map around
-  for _ in enumerate(map):
-    coord_y = _[0]
-    for __ in enumerate(_[1]):
-      coord_x = __[0]
+  for row in map:
+    for tile in row:
       #coord_x and coord_y are the coordinates of the tile in the map, not the screen blit coords
       #the map is a list of lists, so the first list is the first row, the second list is the second row
       #the first item in the list is the first tile, the second item is the second tile, etc.
       #display_x and display_y will be the screen blit coords of the tile
-      #for every y:
-      display_x = (coord_y - 1)*(-hex_size/4)*sqrt(3)
-      display_y = (coord_y - 1)*(hex_size*0.75)
-      #for every x:
-      display_x += (coord_x - 1)*(hex_size/2)*sqrt(3)
-      #incorporate offsets
+      tile.display()
       
-      if map[coord_y][coord_x] == "plains":
-        screen.blit(plains_img, (display_x + offset_x, display_y + offset_y))
-      elif map[coord_y][coord_x] == "forest":
-        screen.blit(forest_img, (display_x + offset_x, display_y + offset_y))
-      elif map[coord_y][coord_x] == "water":
-        screen.blit(water_img, (display_x + offset_x, display_y + offset_y))
-      elif map[coord_y][coord_x] == "ocean":
-        screen.blit(ocean_img, (display_x + offset_x, display_y + offset_y))
-      elif map[coord_y][coord_x] == "mountain":
-        screen.blit(mountain_img, (display_x + offset_x, display_y + offset_y))
-      
-      if [coord_x, coord_y] in food:
-        screen.blit(crop_img, (display_x + offset_x, display_y + offset_y))
-      elif [coord_x, coord_y] in harvested_crop:
-        screen.blit(harvested_crop_img, (display_x + offset_x, display_y + offset_y))
-      if [coord_x, coord_y] in seaweed:
-        screen.blit(seaweed_img, (display_x + offset_x, display_y + offset_y))
-      if [coord_x, coord_y] in villages:
-        screen.blit(village_img, (display_x + offset_x, display_y + offset_y))
-  #displays the map in hexagonal form
+#displays the map in hexagonal form
 #MAP[0][0] would be plains
 #MAP[0][1] wouild be forest
 #MAP[0][2] would be desert
@@ -383,7 +416,7 @@ def shadeTile(coord_x, coord_y, color):
   pygame.draw.polygon(transparent_screen, color, [point1, point2, point3, point4, point5, point6])
 
 
-def display_units(units, offset_x, offset_y, p_number, p_color):
+def display_units(units, offset_x, offset_y, p_number, p_color, availability_marker_size = 10):
   global current_player
   #p_number is the player number
   #this displays a list of specific units (a unit type)
@@ -397,10 +430,13 @@ def display_units(units, offset_x, offset_y, p_number, p_color):
     pygame.draw.rect(screen, (0, 255, 0), (a_unit.display_x + offset_x, a_unit.display_y + offset_y - 12.5, Unit.unit_size*(a_unit.health/a_unit.max_health), 10))
     text(15, str(a_unit.health) + "/" + str(a_unit.max_health), (0, 0, 0), a_unit.display_x + offset_x + Unit.unit_size/2, a_unit.display_y + offset_y - 7.5, alignx = "center", aligny = "center")
     text(25, str(p_number + 1), (255, 255, 255), a_unit.display_x + offset_x + Unit.unit_size/2, a_unit.display_y + offset_y + Unit.unit_size/2, alignx = "center", aligny = "center")
-    if a_unit.turn_done:
-      pygame.draw.circle(screen, (255, 0, 0), (a_unit.display_x + offset_x, a_unit.display_y + offset_y), 10)
+    if p_number == current_player:
+      pygame.draw.circle(screen, (255, 0, 0), (a_unit.display_x + offset_x, a_unit.display_y + offset_y), availability_marker_size)
+      if not a_unit.turn_done:
+        pygame.draw.circle(screen, (0, 255, 0), (a_unit.display_x + offset_x, a_unit.display_y + offset_y), availability_marker_size)
     else:
-      pygame.draw.circle(screen, (0, 0, 255), (a_unit.display_x + offset_x, a_unit.display_y + offset_y), 10)
+      pygame.draw.circle(screen, (125, 125, 125), (a_unit.display_x + offset_x, a_unit.display_y + offset_y), availability_marker_size)
+    text(30, str(p_number + 1), (0, 0, 0), a_unit.display_x + offset_x, a_unit.display_y + offset_y, alignx = "center", aligny = "center")
 def unit_reset(unit):
   unit.action = None
   unit.action_index = 0
@@ -432,7 +468,7 @@ class Player:
     #player number determines the order the players play in starting from 0 not 1
     self.player_number = player_number
     self.color = (randint(0, 255), randint(0, 255), randint(0, 255))
-    self.money = 5
+    self.money = 10
     self.metal = 0
     self.wood = 0
     self.food = 0
@@ -528,7 +564,7 @@ class Player:
       #get wood by cutting down forest into plains
       #location must be at forest tile
       self.wood += 5
-      MAP[selected_object[1]][selected_object[0]] = "plains"
+      selected_object.terrain = "plains"
     elif action == "cultivate":
       self.food += 3
       crop.remove(list(selected_object))
@@ -538,7 +574,7 @@ class Player:
       seaweed.remove(list(selected_object))
     elif action == "grow":
       #grow forest from plains
-      MAP[selected_object[1]][selected_object[0]] = "forest"
+      selected_object.terrain = "forest"
     self.money -= cost
   def turn_update_before(self):
     #this takes place at the beginning of turn, where buildings and cities produce resources
@@ -676,7 +712,7 @@ class Unit:
     self.action_range_placeholder = deepcopy(self.action_range)
     #moverange is a list of all the adjacent hexes that the unit can be moved to
   def next_action(self):
-    global location_x, location_y, selected_object, selected_object
+    global selected_object, selected_object
     try:
       self.action = self.action_sequence[self.action_index + 1]
       self.action_index += 1
@@ -693,12 +729,12 @@ class Unit:
       #action is a movement order
       #self.action is the number of maximum hexes to move
 
-      if list(object) in self.action_range:
+      if [object.coord_x, object.coord_y] in self.action_range:
         btn_pressed_this_frame = True
         #location is within movement range and is not occupied
         print("successful move")
-        self.coord_x = object[0]
-        self.coord_y = object[1]
+        self.coord_x = object.coord_x
+        self.coord_y = object.coord_y
         #the move is valid, so we move on to the next action
         self.next_action()
 
@@ -710,10 +746,11 @@ class Unit:
 
       if [object.coord_x, object.coord_y] in self.action_range:
         btn_pressed_this_frame = True
-        print("successful attack")
+        print("successful attack", type(object))
         #the attack is valid, so we move on to the next action
         for animation in range(calculate_damage(self, object)):
-          animation_list.append(damageAnimation(object.display_x + Unit.unit_size/2 + offset_x - damageAnimation.img_size/2, object.display_y + Unit.unit_size/2 + offset_y - damageAnimation.img_size/2, damageAnimation.img_size, damageAnimation.img))
+          print("ru")
+          animation_list.append(damageAnimation(object.display_x + Unit.unit_size/2 + offset_x - damageAnimation.img_size/2, object.display_y + Unit.unit_size/2 + offset_y - damageAnimation.img_size/2))
           print("animation created")
         #make the targeted_unit lose health
         object.health -= calculate_damage(self, object)
@@ -780,7 +817,7 @@ class Unit:
           #if empty spot or player owns dude that is there
             if movement_tile[0] >= 0 and movement_tile[0] <= map_length and movement_tile[1] >= 0 and movement_tile[1] <= map_length:
               #if inside the map
-              if MAP[movement_tile[1]][movement_tile[0]] in Player.player_list[current_player].available_terrain:
+              if MAP[movement_tile[1]][movement_tile[0]].terrain in Player.player_list[current_player].available_terrain:
                 #in good terrain?
                 self.action_range.extend(return_Adjacent_hex(movement_tile[0], movement_tile[1]))
                 #now we have all the hexes we can move to minus the ones blocked by enemy units or bad terrain
@@ -792,7 +829,7 @@ class Unit:
           #remove duplicates and places occupied by other ppl
           if movement_tile[0] >= 0 and movement_tile[0] <= map_length and movement_tile[1] >= 0 and movement_tile[1] <= map_length:
             #if inside the map
-            if MAP[movement_tile[1]][movement_tile[0]] in Player.player_list[current_player].available_terrain:
+            if MAP[movement_tile[1]][movement_tile[0]].terrain in Player.player_list[current_player].available_terrain:
               #remove places that are bad terrain
               self.action_range.append(movement_tile)
       if "float" in self.abilities:
@@ -851,6 +888,8 @@ small_icon_size = 50
 small_move_img = pygame.transform.scale(move_img, (small_icon_size, small_icon_size))
 small_attack_img = pygame.transform.scale(attack_img, (small_icon_size, small_icon_size))
 small_heal_img = pygame.transform.scale(heal_img, (small_icon_size, small_icon_size))
+
+skip_action_img = pygame.image.load("unit actions/skip action.png").convert_alpha()
 
 def display_action_sequence(action_sequence, action_index, x, y, mini = False):
   if not mini:
@@ -949,13 +988,13 @@ class Building:
     self.production_timer += 1
     if self.production_timer == self.production_time:
       for _ in range(self.production[0]):
-        animation_list.append(resourceAnimation([0, 1, 0, 0], randint(round(self.display_x + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_x + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_y + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_y + offset_y + City.city_size/2 + resourceAnimation.animation_range/2)), 25, SCREENLENGTH - 50, 87.5, 25, wood_resource_img))
+        animation_list.append(resourceAnimation([0, 1, 0, 0], randint(round(self.display_x + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_x + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_y + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_y + offset_y + City.city_size/2 + resourceAnimation.animation_range/2)), SCREENLENGTH - 12.5, 87.5, 25, wood_resource_img))
       for _ in range(self.production[1]):
-        animation_list.append(resourceAnimation([0, 0, 1, 0], randint(round(self.display_x + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_x + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_y + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_y + offset_y + City.city_size/2 + resourceAnimation.animation_range/2)), 25, SCREENLENGTH - 50, 122.5, 25, metal_resource_img))
+        animation_list.append(resourceAnimation([0, 0, 1, 0], randint(round(self.display_x + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_x + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_y + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_y + offset_y + City.city_size/2 + resourceAnimation.animation_range/2)), SCREENLENGTH - 12.5, 122.5, 25, metal_resource_img))
       self.production_timer = 0
       if "cultivate" in self.abilities and [self.coord_x, self.coord_y] in crop:
         for _ in range(self.production[2]):
-          animation_list.append(resourceAnimation([0, 0, 0, 1], randint(round(self.display_x + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_x + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_y + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_y + offset_y + City.city_size/2 + resourceAnimation.animation_range/2)), 25, SCREENLENGTH - 50, 137.5, 25, food_resource_img))
+          animation_list.append(resourceAnimation([0, 0, 0, 1], randint(round(self.display_x + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_x + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_y + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_y + offset_y + City.city_size/2 + resourceAnimation.animation_range/2)), SCREENLENGTH - 12.5, 137.5, 25, food_resource_img))
         crop.remove([self.coord_x, self.coord_y])
         harvested_crop.append([self.coord_x, self.coord_y])
   def display_stats(self, x, y, text_display_size = 20):
@@ -1028,14 +1067,14 @@ class City:
     #run this in the end_turn button clicked
     #add for loop for animation
     for _ in range(self.income[0]):
-      animation_list.append(resourceAnimation([1, 0, 0, 0], randint(round(self.display_x + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_x + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_y + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_y + offset_y + City.city_size/2 + resourceAnimation.animation_range/2)), 25, SCREENLENGTH - 50, 62.5, 25, money_resource_img))
+      animation_list.append(resourceAnimation([1, 0, 0, 0], randint(round(self.display_x + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_x + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_y + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_y + offset_y + City.city_size/2 + resourceAnimation.animation_range/2)), SCREENLENGTH - 12.5, 62.5, 25, money_resource_img))
     #Player.player_list[current_player].money += 
     for _ in range(self.income[1]):
-      animation_list.append(resourceAnimation([0, 1, 0, 0], randint(round(self.display_x + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_x + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_y + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_y + offset_y + City.city_size/2 + resourceAnimation.animation_range/2)), 25, SCREENLENGTH - 50, 87.5, 25, wood_resource_img))
+      animation_list.append(resourceAnimation([0, 1, 0, 0], randint(round(self.display_x + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_x + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_y + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_y + offset_y + City.city_size/2 + resourceAnimation.animation_range/2)), SCREENLENGTH - 12.5, 87.5, 25, wood_resource_img))
     for _ in range(self.income[2]):
-      animation_list.append(resourceAnimation([0, 0, 1, 0], randint(round(self.display_x + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_x + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_y + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_y + offset_y + City.city_size/2 + resourceAnimation.animation_range/2)), 25, SCREENLENGTH - 50, 112.5, 25, metal_resource_img))
+      animation_list.append(resourceAnimation([0, 0, 1, 0], randint(round(self.display_x + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_x + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_y + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_y + offset_y + City.city_size/2 + resourceAnimation.animation_range/2)), SCREENLENGTH - 12.5, 112.5, 25, metal_resource_img))
     for _ in range(self.income[3]):
-      animation_list.append(resourceAnimation([0, 0, 0, 1], randint(round(self.display_x + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_x + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_y + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_y + offset_y + City.city_size/2 + resourceAnimation.animation_range/2)), 25, SCREENLENGTH - 50, 137.5, 25, food_resource_img))
+      animation_list.append(resourceAnimation([0, 0, 0, 1], randint(round(self.display_x + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_x + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_y + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_y + offset_y + City.city_size/2 + resourceAnimation.animation_range/2)), SCREENLENGTH - 12.5, 137.5, 25, food_resource_img))
   def upgrade(self):
     self.level += 1
     self.income[0] += 5
@@ -1198,10 +1237,9 @@ all_techs = [logging, archery, forestry, reforestation, climbing, smithery, armo
 animating = False
 animation_list = []
 class Animation:
-  def __init__(self, x, y, size, img, img_size):
+  def __init__(self, x, y, img, img_size):
     self.x = x
     self.y = y
-    self.size = size
     self.img = img
     self.img_size = img_size
   def update(self):
@@ -1217,8 +1255,8 @@ class resourceAnimation(Animation):
   sprite_speed = 12
   animation_range = 80
   img_size = 25
-  def __init__(self, value, x, y, size, targetx, targety, targetsize, img):
-    super().__init__(x, y, size, img, resourceAnimation.img_size)
+  def __init__(self, value, x, y, targetx, targety, targetsize, img):
+    super().__init__(x, y, img, resourceAnimation.img_size)
     #value should be a list containing the resource of the thing
     self.value = value
     self.targetx = targetx
@@ -1230,17 +1268,22 @@ class damageAnimation(Animation):
   max_distance = 100
   img = pygame.image.load("stats/health.png").convert_alpha()
   img_size = 25
-  def __init__(self, x, y, size, img):
-    super().__init__(x, y, size, img, damageAnimation.img_size)
+  def __init__(self, x, y):
+    super().__init__(x, y, damageAnimation.img, damageAnimation.img_size)
     self.velx, self.vely = pygame.math.Vector2(0, damageAnimation.sprite_speed).rotate(randint(0, 360))
     self.distance_traveled = 0
+class attackAnimation(Animation):
+  sprite_speed = 10
+  size = 50
+  def __init__(self, x, y, img, start, end):
+    super().__init__(x, y, attackAnimation.size)
 def destroyAnimation():
   deletion_counter = 0
   while deletion_counter < len(animation_list):
     #building_type will be a list of a specific building type
     sprite = animation_list[deletion_counter]
     if isinstance(sprite, resourceAnimation):
-      if rect_collided(sprite.x, sprite.y, sprite.size, sprite.size, sprite.targetx, sprite.targety, sprite.targetsize, sprite.targetsize):
+      if rect_collided(sprite.x, sprite.y, sprite.img_size, sprite.img_size, sprite.targetx, sprite.targety, sprite.targetsize, sprite.targetsize):
         for _ in enumerate(sprite.value):
           if _[0] == 0:
             Player.player_list[current_player].money += _[1]
@@ -1281,24 +1324,16 @@ def receive_input(class_object):
     elif class_object == "location":
       for row in enumerate(MAP):
         for tile in enumerate(row[1]):
-          #coords are (tile[0], row[0])
-          tile_display_x = (row[0] - 1)*(-hex_size/4)*sqrt(3)
-          tile_display_y = (row[0] - 1)*(hex_size*0.75)
-          tile_display_x += (tile[0] - 1)*(hex_size/2)*sqrt(3)
-          #allocate for image size (off of hex_side)
-          tile_display_x += ((hex_size/2)*sqrt(3))/2
-          tile_display_y += hex_size/2
-          #(tile_display_x, tile_display_y) are the center coords of the tile
-          if circle_collided(mouse_pos[0], mouse_pos[1], 1, tile_display_x + offset_x, tile_display_y + offset_y, selected_collision_range/2):
+          if circle_collided(mouse_pos[0], mouse_pos[1], 1, tile[1].display_x + offset_x + hex_size*sqrt(3)/4, tile[1].display_y + offset_y + hex_size/2, selected_collision_range/2):
             if tile[0] >= 0 and tile[0] <= map_length and row[0] >= 0 and row[0] <= map_length:
-              if MAP[tile[0]][row[0]] != "":
-                return (tile[0], row[0])
+              if tile[1].terrain != "":
+                return tile[1]
     receiving_input = False
   return None
-selection_order = [Unit, Building, City, tuple, None]
+selection_order = [Unit, Building, City, Location, None]
 selection_counter = 0
 def alternate_selection():
-  global selected_object, selection_order, btn_pressed_this_frame, location_x, location_y
+  global selected_object, selection_order, btn_pressed_this_frame
   for object_type in selection_order[selection_order.index(type(selected_object))+1:]:
     if object_type == Unit:
       if return_occupied(selected_object.coord_x, selected_object.coord_y, "unit"):
@@ -1312,16 +1347,9 @@ def alternate_selection():
       if return_occupied(selected_object.coord_x, selected_object.coord_y, "city"):
         btn_pressed_this_frame = True
         return return_occupied(selected_object.coord_x, selected_object.coord_y, "city")
-    elif object_type == tuple:
+    elif object_type == Location:
       btn_pressed_this_frame = True
-      selected_object = (selected_object.coord_x, selected_object.coord_y)
-      location_x = (selected_object[1] - 1)*(-hex_size/4)*sqrt(3)
-      location_y = (selected_object[1] - 1)*(hex_size*0.75)
-      location_x += (selected_object[0] - 1)*(hex_size/2)*sqrt(3)
-      #allocate for image size (off of hex_side)
-      location_x += ((hex_size/2)*sqrt(3))/2
-      location_y += hex_size/2
-      return selected_object
+      return MAP[selected_object.coord_y][selected_object.coord_x]
     elif object_type == None:
       btn_pressed_this_frame = True
       return None
@@ -1329,17 +1357,11 @@ def alternate_selection():
 
 def same_space(location):
   #contrasts a thing with selected_object
-  #location is a set containing (coordx, coordy)
   #returns if 2 things are in the same place
   global selected_object
   if selected_object == None:
     return False
-  if isinstance(selected_object, Unit) or isinstance(selected_object, Building) or isinstance(selected_object, City):
-    location2 = (selected_object.coord_x, selected_object.coord_y)
-  elif isinstance(selected_object, tuple):
-    #for location
-    location2 = selected_object
-  #no matter what, selected_object will be a tuple of coordx and coordy
+  location2 = (selected_object.coord_x, selected_object.coord_y)
   if location == location2:
     return True
   else:
@@ -1421,7 +1443,7 @@ while True:
     if pressed_keys[pygame.K_RIGHT] or pressed_keys[pygame.K_d]:
       offset_x -= 10
 
-    display_map_hex(MAP, crop, seaweed, offset_x, offset_y)
+    display_map_hex(MAP)
     #create a rect area for selected, targeted, and location
     screen.blit(selection_frame, (0, 0))
 
@@ -1447,36 +1469,17 @@ while True:
         screen.blit(selected_object.image, (0, 87.5))
         selected_object.display_stats(0, 87.5)
     #display selected location on left side of map
-      elif isinstance(selected_object, tuple):
-        if MAP[selected_object[1]][selected_object[0]] == "plains":
-          current_hex_img = plains_img
-        elif MAP[selected_object[1]][selected_object[0]] == "forest":
-          current_hex_img = forest_img
-        elif MAP[selected_object[1]][selected_object[0]] == "water":
-          current_hex_img = water_img
-        elif MAP[selected_object[1]][selected_object[0]] == "ocean":
-          current_hex_img = ocean_img
-        elif MAP[selected_object[1]][selected_object[0]] == "mountain":
-          current_hex_img = mountain_img
-          
-        screen.blit(current_hex_img, (0, 100))
-        if [selected_object[0], selected_object[1]] in crop:
-          screen.blit(crop_img, (0, 100))
-        elif [selected_object[0], selected_object[1]] in harvested_crop:
-          screen.blit(harvested_crop_img, (0, 100))
-        if [selected_object[0], selected_object[1]] in seaweed:
-          screen.blit(seaweed_img, (0, 100))
-        if [selected_object[0], selected_object[1]] in villages:
-          screen.blit(village_img, (0, 100))
+      elif isinstance(selected_object, Location):
+        selected_object.display(custom = (0, 100))
         screen.blit(location_img, (0, 100))
-        if Player.player_list[current_player].owns_unit(return_occupied(selected_object[0], selected_object[1], "unit")):
+        if Player.player_list[current_player].owns_unit(return_occupied(selected_object.coord_x, selected_object.coord_y, "unit")):
           screen.blit(unit_location_img, (0, 100))
-        elif Player.player_list[current_player].owns_building(return_occupied(selected_object[0], selected_object[1], "building")):
+        elif Player.player_list[current_player].owns_building(return_occupied(selected_object.coord_x, selected_object.coord_y, "building")):
           screen.blit(location_select_img, (0, 100))
-        elif Player.player_list[current_player].owns_city(return_occupied(selected_object[0], selected_object[1], "city")):
+        elif Player.player_list[current_player].owns_city(return_occupied(selected_object.coord_x, selected_object.coord_y, "city")):
           screen.blit(location_select_img, (0, 100))
         #capitalize the first letter of the location
-        text(20, str(MAP[selected_object[1]][selected_object[0]])[0].upper() + str(MAP[selected_object[1]][selected_object[0]])[1:].lower(), (0, 0, 0), 44, 75, alignx = "center")
+        text(20, str(selected_object.terrain)[0].upper() + str(selected_object.terrain)[1:].lower(), (0, 0, 0), 44, 75, alignx = "center")
 
     if isinstance(selected_object, Unit):
       #if button(50, SCREENHEIGHT - 100, 100, 50, 10, available = selected_object.action != None):
@@ -1514,9 +1517,10 @@ while True:
     
       #action skip button is clicked
     if isinstance(selected_object, Unit) and selected_object.action_sequence != [] and selected_object.turn_done == False:
-      if button(50, SCREENHEIGHT - 200, 100, 50, 10):
+      if button(25, 175, 125, 125, 10):
         selected_object.next_action()
-      text(25, "Skip Action", (0, 0, 0), 100, SCREENHEIGHT - 175, alignx = "center", aligny = "center")
+      screen.blit(skip_action_img, (50, 212.5))
+      text(25, "Skip Action", (0, 0, 0), 87.5, 200, alignx = "center", aligny = "center")
 
     if button(SCREENLENGTH - 100, SCREENHEIGHT - 125, 100, 100, 10):
       #if end_turn button is clicked
@@ -1550,7 +1554,7 @@ while True:
         #upgrade a building if there's a dude on it
         if selected_object.upgraded_building in Player.player_list[current_player].available_upgraded_buildings:
           #if there is no upgraded building, it would be: if None in available buildings, so that would be false
-          if button(50, SCREENHEIGHT - 250, Building.building_size*2, Building.building_size*2, 10, available = bool(Player.player_list[current_player].money >= selected_object.upgraded_building[1][0] and Player.player_list[current_player].wood >= selected_object.upgraded_building[1][1] and Player.player_list[current_player].metal >= selected_object.upgraded_building[1][2] and Player.player_list[current_player].food >= selected_object.upgraded_building[1][3])):
+          if button(25, 200, Building.building_size*2, Building.building_size*2, 10, available = bool(Player.player_list[current_player].money >= selected_object.upgraded_building[1][0] and Player.player_list[current_player].wood >= selected_object.upgraded_building[1][1] and Player.player_list[current_player].metal >= selected_object.upgraded_building[1][2] and Player.player_list[current_player].food >= selected_object.upgraded_building[1][3])):
             selected_object.upgrade()
             Player.player_list[current_player].money -= selected_object.cost[0]
             Player.player_list[current_player].wood -= selected_object.cost[1]
@@ -1558,12 +1562,12 @@ while True:
             Player.player_list[current_player].food -= selected_object.cost[3]
           if selected_object.upgraded_building != None:
             if selected_object.upgraded_building[0] == "Foundry":
-              screen.blit(Building.foundry_img, (62.5, SCREENHEIGHT - 175))
+              screen.blit(Building.foundry_img, (37.5, 262.5))
             elif selected_object.upgraded_building[0] == "Plantation":
-              screen.blit(Building.plantation_img, (62.5, SCREENHEIGHT - 175))
-            text(20, selected_object.upgraded_building[0], (0, 0, 0), 50, SCREENHEIGHT - 200)
-            display_resources(selected_object.upgraded_building[1], 175, SCREENHEIGHT - 200)
-          text(25, "Upgrade", (0, 0, 0), 125, SCREENHEIGHT - 225, alignx = "center", aligny = "center")
+              screen.blit(Building.plantation_img, (37.5, 262.5))
+            text(20, selected_object.upgraded_building[0], (0, 0, 0), 75, 250, alignx = "center", aligny = "center")
+            display_resources(selected_object.upgraded_building[1], 150, 237.5)
+          text(25, "Upgrade", (0, 0, 0), 100, 225, alignx = "center", aligny = "center")
       #build ships
       if "shipbuilding" in selected_object.abilities:
         if not return_occupied(selected_object.coord_x, selected_object.coord_y, "unit"):
@@ -1616,23 +1620,23 @@ while True:
           display_resources(unit_type[1][7], 75, option_x + unit_type[0] * (Unit.unit_size*2))
       #upgrade button
       if selected_object.level < City.max_level:
-        if button(50, SCREENHEIGHT - 250, City.city_size*2, City.city_size*2, 10, available = bool(Player.player_list[current_player].money >= selected_object.cost[0] and Player.player_list[current_player].wood >= selected_object.cost[1] and Player.player_list[current_player].metal >= selected_object.cost[2] and Player.player_list[current_player].food >= selected_object.cost[2])):
+        if button(25, 200, City.city_size*2, City.city_size*2, 10, available = bool(Player.player_list[current_player].money >= selected_object.cost[0] and Player.player_list[current_player].wood >= selected_object.cost[1] and Player.player_list[current_player].metal >= selected_object.cost[2] and Player.player_list[current_player].food >= selected_object.cost[2])):
           selected_object.upgrade()
-        screen.blit(selected_object.image, (62.5, SCREENHEIGHT - 187.5))
-        screen.blit(City.upgrade_img, (62.5, SCREENHEIGHT - 187.5))
-        display_resources(selected_object.cost, 175, SCREENHEIGHT - 200)
-        text(25, "Upgrade", (0, 0, 0), 125, SCREENHEIGHT - 225, alignx = "center", aligny = "center")
+        screen.blit(selected_object.image, (37.5, 250))
+        screen.blit(City.upgrade_img, (37.5, 250))
+        display_resources(selected_object.cost, 150, 237.5)
+        text(25, "Upgrade", (0, 0, 0), 100, 225, alignx = "center", aligny = "center")
       else:
-        text(25, "Max Level", (0, 0, 0), 100, SCREENHEIGHT - 175, alignx = "center", aligny = "center")
+        text(25, "Max Level", (0, 0, 0), 75, 175, alignx = "center", aligny = "center")
 
     #build building buttons
-    elif isinstance(selected_object, tuple):
+    elif isinstance(selected_object, Location):
       #run through available buildings and player actions
       #selected object is a location
       #building a building
       for a_building_type in enumerate(Player.player_list[current_player].available_buildings):
         #a_building_type is a list containing the stats of a building
-        if not bool(return_occupied(selected_object[0], selected_object[1], object = "building")) and Player.player_list[current_player].owns_unit(return_occupied(selected_object[0], selected_object[1], object = "unit")) and MAP[selected_object[1]][selected_object[0]] in a_building_type[1][4] and not bool(return_occupied(selected_object[0], selected_object[1], object = "city")):
+        if not bool(return_occupied(selected_object.coord_x, selected_object.coord_y, object = "building")) and Player.player_list[current_player].owns_unit(return_occupied(selected_object.coord_x, selected_object.coord_y, object = "unit")) and selected_object.terrain in a_building_type[1][4] and not bool(return_occupied(selected_object.coord_x, selected_object.coord_y, object = "city")):
           #if there is no other building there and u own a dude that is there and the terrain is in the building's terrain list and there is no city there
           if bool("cultivate" in a_building_type[1][5] and bool(list(selected_object) in crop or list(selected_object) in harvested_crop)) or bool(not "cultivate" in a_building_type[1][5]):
             #if the building is a cultivating building and it is on a crop/harvested crop or the building is not a cultivating building
@@ -1643,7 +1647,7 @@ while True:
               Player.player_list[current_player].wood -= a_building_type[1][1][1]
               Player.player_list[current_player].metal -= a_building_type[1][1][2]
               Player.player_list[current_player].food -= a_building_type[1][1][3]
-              Player.player_list[current_player].buildings.append(Building(a_building_type[1], selected_object[0], selected_object[1]))
+              Player.player_list[current_player].buildings.append(Building(a_building_type[1], selected_object.coord_x, selected_object.coord_y))
             #display the building images on the buttons
             if a_building_type[1][0] == "Lumber Hut":
               screen.blit(Building.lumber_hut_img, (SCREENLENGTH - Building.building_size*2 + 25, 250 + a_building_type[0] * (Building.building_size*2)))
@@ -1660,12 +1664,12 @@ while True:
           
       for player_action in enumerate(Player.player_list[current_player].available_actions):
         #doing a player action
-        if Player.player_list[current_player].owns_unit(return_occupied(selected_object[0], selected_object[1], object = "unit")) and not bool(return_occupied(selected_object[0], selected_object[1], object = "building")) and not bool(return_occupied(selected_object[0], selected_object[1], object = "city")):
+        if Player.player_list[current_player].owns_unit(return_occupied(selected_object.coord_x, selected_object.coord_y, object = "unit")) and not bool(return_occupied(selected_object.coord_x, selected_object.coord_y, object = "building")) and not bool(return_occupied(selected_object.coord_x, selected_object.coord_y, object = "city")):
           #if you own a dude there and there is no building there (to avoid chopping forest where there is a lumber hut) and there is no city there
           #can't do player action when there's a building there
           #first if statement checks the action, second if statement checks if terrain is compatible, third is the button
           if player_action[1] == "chop":
-            if MAP[selected_object[1]][selected_object[0]] == "forest":
+            if selected_object.terrain == "forest":
               if button(player_action_x + player_action[0] * player_action_size, player_action_y, player_action_size, player_action_size, 20, available = bool(Player.player_list[current_player].money >= Player.chop_cost)):
                 Player.player_list[current_player].player_action("chop", Player.chop_cost)
               screen.blit(chop_img, (player_action_x + player_action[0] * player_action_size, player_action_y))
@@ -1673,21 +1677,21 @@ while True:
               text(50, str(Player.chop_cost), money_color, (player_action_x + player_action_size/2) + (player_action[0] * player_action_size), player_action_y + 25, alignx = "center")
               #display chop image
           elif player_action[1] == "cultivate":
-            if list(selected_object) in crop:
+            if "crop" in selected_object.features:
               if button(player_action_x + player_action[0] * player_action_size, player_action_y, player_action_size, player_action_size, 20, available = bool(Player.player_list[current_player].money >= Player.cultivate_cost)):
                 Player.player_list[current_player].player_action("cultivate", Player.cultivate_cost)
               screen.blit(cultivate_img, (player_action_x + player_action[0] * player_action_size, player_action_y))
               text(25, "Cultivate", (0, 0, 0), (player_action_x + player_action_size/2) + (player_action[0] * player_action_size), player_action_y - 10, alignx = "center")
               text(50, str(Player.cultivate_cost), money_color, (player_action_x + player_action_size/2) + (player_action[0] * player_action_size), player_action_y + 25, alignx = "center")
           elif player_action[1] == "harvest":
-            if list(selected_object) in seaweed:
+            if "seaweed" in selected_object.features:
               if button(player_action_x + player_action[0] * player_action_size, player_action_y, player_action_size, player_action_size, 20):
                 #seaweed is free (like whaling in polytopia), btn always available
                 Player.player_list[current_player].player_action("harvest")
               screen.blit(harvest_img, (player_action_x + player_action[0] * player_action_size, player_action_y))
               text(25, "Harvest", (0, 0, 0), (player_action_x + player_action_size/2) + (player_action[0] * player_action_size), player_action_y - 10, alignx = "center")
           elif player_action[1] == "grow":
-            if MAP[selected_object[1]][selected_object[0]] == "plains":
+            if selected_object.terrain == "plains":
               if button(player_action_x + player_action[0] * player_action_size, player_action_y, player_action_size, player_action_size, 20, available = bool(Player.player_list[current_player].money >= Player.grow_cost)):
                 Player.player_list[current_player].player_action("grow", Player.grow_cost)
               screen.blit(grow_img, (player_action_x + player_action[0] * player_action_size, player_action_y))
@@ -1736,25 +1740,14 @@ while True:
         #we are selecting location
         for row in enumerate(MAP):
           for tile in enumerate(row[1]):
-            #coords are (tile[0], row[0])
-            tile_display_x = (row[0] - 1)*(-hex_size/4)*sqrt(3)
-            tile_display_y = (row[0] - 1)*(hex_size*0.75)
-            tile_display_x += (tile[0] - 1)*(hex_size/2)*sqrt(3)
-            #allocate for image size (off of hex_side)
-            tile_display_x += ((hex_size/2)*sqrt(3))/2
-            tile_display_y += hex_size/2
-            #(tile_display_x, tile_display_y) are the center coords of the tile
-            if circle_collided(mouse_pos[0], mouse_pos[1], 1, tile_display_x + offset_x, tile_display_y + offset_y, selected_collision_range/2):
+            if circle_collided(mouse_pos[0], mouse_pos[1], 1, tile[1].display_x + offset_x + hex_size*sqrt(3)/4, tile[1].display_y + offset_y + hex_size/2, selected_collision_range/2):
               if tile[0] >= 0 and tile[0] <= map_length and row[0] >= 0 and row[0] <= map_length:
                 if MAP[tile[0]][row[0]] != "":
-                  if not same_space((tile[0], row[0])):
+                  if not same_space((tile[1].coord_x, tile[1].coord_y)):
                     btn_pressed_this_frame = True
-                    selected_object = (tile[0], row[0])
-                    location_x = tile_display_x
-                    location_y = tile_display_y
+                    selected_object = tile[1]
                   else:
                     selected_object = alternate_selection()
-                  #(tile[0], row[0]) is the coords of the "location") 
     for a_player in enumerate(Player.player_list):
       #this also resets each unit'saction_range, so keep this above the display_hints method
       a_player[1].update(a_player[0])
@@ -1778,14 +1771,14 @@ while True:
         screen.blit(building_select_img, (selected_object.display_x + offset_x, selected_object.display_y + offset_y))
         if not Player.player_list[current_player].owns_city(selected_object):
           screen.blit(foreign_building_select_img, (selected_object.display_x + offset_x, selected_object.display_y + offset_y))
-      elif isinstance(selected_object, tuple):
-        screen.blit(location_img, (location_x + offset_x - ((hex_size/4) * sqrt(3)), location_y + offset_y - hex_size/2))
-        if Player.player_list[current_player].owns_unit(return_occupied(selected_object[0], selected_object[1], "unit")):
-          screen.blit(unit_location_img, (location_x + offset_x - ((hex_size/4) * sqrt(3)), location_y + offset_y - hex_size/2))
-        elif Player.player_list[current_player].owns_building(return_occupied(selected_object[0], selected_object[1], "building")):
-          screen.blit(location_select_img, (location_x + offset_x - ((hex_size/4) * sqrt(3)), location_y + offset_y - hex_size/2))
-        elif Player.player_list[current_player].owns_city(return_occupied(selected_object[0], selected_object[1], "city")):
-          screen.blit(location_select_img, (location_x + offset_x - ((hex_size/4) * sqrt(3)), location_y + offset_y - hex_size/2))
+      elif isinstance(selected_object, Location):
+        screen.blit(location_img, (selected_object.display_x + offset_x, selected_object.display_y + offset_y))
+        if Player.player_list[current_player].owns_unit(return_occupied(selected_object.coord_x, selected_object.coord_y, "unit")):
+          screen.blit(unit_location_img, (selected_object.display_x + offset_x, selected_object.display_y + offset_y))
+        elif Player.player_list[current_player].owns_building(return_occupied(selected_object.coord_x, selected_object.coord_y, "building")):
+          screen.blit(location_select_img, (selected_object.display_x + offset_x, selected_object.display_y + offset_y))
+        elif Player.player_list[current_player].owns_city(return_occupied(selected_object.coord_x, selected_object.coord_y, "city")):
+          screen.blit(location_select_img, (selected_object.display_x + offset_x, selected_object.display_y + offset_y))
     destroyAnimation()
     for animation in animation_list:
       animation.update()
