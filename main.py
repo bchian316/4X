@@ -280,7 +280,7 @@ class Location:
       screen.blit(harvested_crop_img, coords)
     if "seaweed" in self.features:
       screen.blit(seaweed_img, coords)
-    if "villages" in self.features:
+    if "village" in self.features:
       screen.blit(village_img, coords)
 
 #lets make the map a constant size (4 side length: hexagon) = 37 tiles
@@ -529,7 +529,7 @@ class Player:
       elif [unit.coord_x, unit.coord_y] in villages:
         #if unit is on a village
         Player.player_list[player_num].cities.append(City(unit.coord_x, unit.coord_y, player_num))
-        villages.remove([unit.coord_x, unit.coord_y])
+        MAP[unit.coord_y][unit.coord_x].features.remove("village")
         print("village converted")
     #display stuff here
     #display buildings
@@ -567,11 +567,11 @@ class Player:
       selected_object.terrain = "plains"
     elif action == "cultivate":
       self.food += 3
-      crop.remove(list(selected_object))
-      harvested_crop.append(list(selected_object))
+      selected_object.features.remove("crop")
+      selected_object.features.append("harvested crop")
     elif action == "harvest":
       self.money += 10
-      seaweed.remove(list(selected_object))
+      selected_object.features.remove("seaweed")
     elif action == "grow":
       #grow forest from plains
       selected_object.terrain = "forest"
@@ -580,8 +580,11 @@ class Player:
     #this takes place at the beginning of turn, where buildings and cities produce resources
     global current_player, selected_object
     #reset crop resource
-    crop.extend(harvested_crop)
-    harvested_crop.clear()
+    for row in MAP:
+      for tile in row:
+        if "harvested crop" in tile.features:
+          tile.features.remove("harvested crop")
+          tile.features.append("crop")
     for building in self.buildings:
       building.produce()
     for city in self.cities:
@@ -614,19 +617,19 @@ Player.player_list[0].color = (0, 255, 255)
 Player.player_list[1].color = (255, 0, 0)
 #unit stats
 #var = ["name", attack, defense, health, regen, range, movement, cost (materials to make him) [money, wood, metal, food], timer, sequences, abilities]
-man = ["Man", 8, 2, 20, 5, 1, 2, [5, 0, 0, 0], 5, [["move", "attack"], ["heal"]], []]
+man = ["Man", 6, 2, 8, 3, 1, 2, [5, 1, 1, 1], 5, [["move", "attack"], ["heal"]], []]
 #man can move 1 or attack
-swordsman = ["Swordsman", 10, 2, 20, 4, 1, 2, [10, 0, 5, 0], 5, [["move", "attack"], ["heal"]], []]
-spearman = ["Spearman", 8, 3, 25, 7, 1, 2, [5, 5, 3, 2], 5, [["move", "attack", "attack"], ["heal"]], []]
-axeman = ["Axeman", 20, 3, 25, 10, 1, 1, [5, 2, 5, 1], 5, [["move"], ["attack"], ["heal"]], []]
-shieldman = ["Shieldman", 6, 6, 35, 5, 1, 1, [5, 0, 10, 0], 5, [["move"], ["attack"], ["heal"]], []]
+swordsman = ["Swordsman", 9, 3, 12, 4, 1, 2, [10, 2, 5, 2], 5, [["move", "attack"], ["heal"]], []]
+spearman = ["Spearman", 8, 2, 10, 3, 2, 2, [5, 5, 3, 2], 5, [["move", "attack", "attack"], ["heal"]], []]
+axeman = ["Axeman", 20, 3, 12, 4, 1, 1, [5, 2, 5, 1], 5, [["move"], ["attack"], ["heal"]], []]
+shieldman = ["Shieldman", 6, 4, 15, 5, 1, 1, [5, 0, 10, 0], 5, [["move"], ["attack"], ["heal"]], []]
 #scout = ["Scout", Player.player_list[current_player].scouts, 3, 1, 5, 3, 1, 3, [3, 1, 0, 0], 3, [["move", "attack", "move"]], []]
 #scout can move 3, attack 3, and move 3
 #catapult = ["Catapult", Player.player_list[current_player].units, 5, 0, 10, 3, 3, 1, [3, 3, 0, 0], 8, [["move"], ["attack"]], []]
 #catapult can move 1 or attack 1
-archer = ["Archer", 10, 1, 10, 2, 2, 2, [5, 3, 0, 0], 7, [["attack", "move"], ["move", "heal"]], []]
-crossbowman = ["Crossbowman", 20, 1, 5, 2, 3, 2, [25, 10, 5, 3], 7, [["move", "attack"], ["attack", "move"], ["heal"]], []]
-rider = ["Rider", 10, 2, 20, 4, 1, 3, [10, 0, 0, 3], 6, [["move", "attack"], ["move", "heal"]], []]
+archer = ["Archer", 7, 1, 8, 4, 2, 2, [5, 3, 0, 0], 7, [["attack", "move"], ["move", "heal"]], []]
+crossbowman = ["Crossbowman", 15, 1, 5, 2, 3, 2, [25, 10, 5, 3], 7, [["move", "attack"], ["attack", "move"], ["heal"]], []]
+rider = ["Rider", 7, 2, 9, 5, 1, 3, [10, 0, 0, 3], 6, [["move", "attack"], ["move", "heal"]], []]
 ship = ["Ship", 10, 3, 10, 3, 1, 2, [15, 5, 0, 0], 0, [["move", "attack"], ["move", "heal", "move"]], ["float"]]
 steeler = ["Steeler", 15, 4, 30, 8, 1, 2, [20, 0, 3, 0], 0, [["move", "attack", "move"], ["heal"]], ["float"]]
 
@@ -749,7 +752,6 @@ class Unit:
         print("successful attack", type(object))
         #the attack is valid, so we move on to the next action
         for animation in range(calculate_damage(self, object)):
-          print("ru")
           animation_list.append(damageAnimation(object.display_x + Unit.unit_size/2 + offset_x - damageAnimation.img_size/2, object.display_y + Unit.unit_size/2 + offset_y - damageAnimation.img_size/2))
           print("animation created")
         #make the targeted_unit lose health
@@ -982,7 +984,6 @@ class Building:
     #upgrade should be a list of the building stats
     self.upgraded_building = stats[6]
   def produce(self):
-    global crop, harvested_crop
     #this is where the building produces resources
     #run this in the end_turn button clicked
     self.production_timer += 1
@@ -995,8 +996,8 @@ class Building:
       if "cultivate" in self.abilities and [self.coord_x, self.coord_y] in crop:
         for _ in range(self.production[2]):
           animation_list.append(resourceAnimation([0, 0, 0, 1], randint(round(self.display_x + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_x + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_y + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_y + offset_y + City.city_size/2 + resourceAnimation.animation_range/2)), SCREENLENGTH - 12.5, 137.5, 25, food_resource_img))
-        crop.remove([self.coord_x, self.coord_y])
-        harvested_crop.append([self.coord_x, self.coord_y])
+        MAP[self.coord_y][self.coord_x].features.remove("crop")
+        MAP[self.coord_y][self.coord_x].features.append("harvested crop")
   def display_stats(self, x, y, text_display_size = 20):
     #change these to imgs later
     text(text_display_size, str(self.name), (0, 0, 0), x + 37.5, y - 15, alignx = "center")
@@ -1206,6 +1207,8 @@ logging_img = pygame.image.load("tech/logging.png").convert_alpha()
 logging = ["Logging", 5, 50, 500, None, None, None, None, "chop", None, logging_img]
 archery_img = pygame.image.load("tech/archery.png").convert_alpha()
 archery = ["Archery", 10, 100, 300, logging, archer, None, None, None, None, archery_img]
+engineering_img = pygame.image.load("tech/engineering.png").convert_alpha()
+engineering = ["Engineering", 20, 100, 100, archery, crossbowman, None, None, None, None, engineering_img]
 forestry_img = pygame.image.load("tech/forestry.png").convert_alpha()
 forestry = ["Forestry", 10, 250, 300, logging, None, lumber_hut, None, None, None, forestry_img]
 reforestation_img = pygame.image.load("tech/reforestation.png").convert_alpha()
@@ -1214,6 +1217,8 @@ climbing_img = pygame.image.load("tech/climbing.png").convert_alpha()
 climbing = ["Climbing", 5, 350, 500, None, None, None, None, None, "mountain", climbing_img]
 smithery_img = pygame.image.load("tech/smithery.png").convert_alpha()
 smithery = ["Smithery", 15, 350, 300, climbing, swordsman, None, None, None, None, smithery_img]
+sharpening_img = pygame.image.load("tech/sharpening.png").convert_alpha()
+sharpening = ["Sharpening", 25, 450, 100, smithery, spearman, None, None, None, None, sharpening_img]
 armoring_img = pygame.image.load("tech/armoring.png")
 armoring = ["Armoring", 25, 350, 150, smithery, shieldman, None, None, None, None, armoring_img]
 mining_img = pygame.image.load("tech/mining.png").convert_alpha()
@@ -1232,7 +1237,7 @@ fertilization_img = pygame.image.load("tech/fertilization.png").convert_alpha()
 fertilization = ["Fertilization", 25, 775, 100, agriculture, None, None, plantation, None, None, fertilization_img]
 riding_img = pygame.image.load("tech/riding.png").convert_alpha()
 riding = ["Riding", 12, 850, 300, harvesting, rider, None, None, None, None, riding_img]
-all_techs = [logging, archery, forestry, reforestation, climbing, smithery, armoring, mining, smelting, swimming, sailing, harvesting, riding, agriculture, fertilization]
+all_techs = [logging, archery, engineering, forestry, reforestation, climbing, smithery, sharpening, armoring, mining, smelting, swimming, sailing, harvesting, riding, agriculture, fertilization]
 
 animating = False
 animation_list = []
@@ -1405,7 +1410,7 @@ while True:
     pygame.display.update()
 
   while status == "playing":
-    screen.fill((255, 255, 255))
+    screen.fill((0, 0, 0))
     transparent_screen.fill((255, 255, 255, 0))
     pressed_keys = pygame.key.get_pressed()
     mouse_pos = pygame.mouse.get_pos()
@@ -1614,6 +1619,8 @@ while True:
             screen.blit(Unit.shieldman_img, (0, option_x + 25 + unit_type[0] * (Unit.unit_size*2)))  
           elif unit_type[1][0] == "Archer":
             screen.blit(Unit.archer_img, (0, option_x + 25 + unit_type[0] * (Unit.unit_size*2)))
+          elif unit_type[1][0] == "Crossbowman":
+            screen.blit(Unit.crossbowman_img, (0, option_x + 25 + unit_type[0] * (Unit.unit_size*2)))
           elif unit_type[1][0] == "Rider":
             screen.blit(Unit.rider_img, (0, option_x + 25 + unit_type[0] * (Unit.unit_size*2)))
           text(20, unit_type[1][0], (0, 0, 0), 0, option_x + unit_type[0] * (Unit.unit_size*2))
@@ -1638,7 +1645,7 @@ while True:
         #a_building_type is a list containing the stats of a building
         if not bool(return_occupied(selected_object.coord_x, selected_object.coord_y, object = "building")) and Player.player_list[current_player].owns_unit(return_occupied(selected_object.coord_x, selected_object.coord_y, object = "unit")) and selected_object.terrain in a_building_type[1][4] and not bool(return_occupied(selected_object.coord_x, selected_object.coord_y, object = "city")):
           #if there is no other building there and u own a dude that is there and the terrain is in the building's terrain list and there is no city there
-          if bool("cultivate" in a_building_type[1][5] and bool(list(selected_object) in crop or list(selected_object) in harvested_crop)) or bool(not "cultivate" in a_building_type[1][5]):
+          if bool("cultivate" in a_building_type[1][5] and bool("crop" in selected_object.features or "harvested crop" in selected_object.features)) or bool(not "cultivate" in a_building_type[1][5]):
             #if the building is a cultivating building and it is on a crop/harvested crop or the building is not a cultivating building
             if button(SCREENLENGTH - Building.building_size*2, 200 + a_building_type[0] * (Building.building_size*2), Building.building_size*2, Building.building_size*2, 10, stroke = 0, available = bool(Player.player_list[current_player].money >= a_building_type[1][1][0] and Player.player_list[current_player].wood >= a_building_type[1][1][1] and Player.player_list[current_player].metal >= a_building_type[1][1][2] and Player.player_list[current_player].food >= a_building_type[1][1][3])):
               #build building and subtract resources
@@ -1859,6 +1866,8 @@ while True:
     clock.tick(FPS)
     text(20, "FPS: " + str(clock.get_fps()), (0, 0, 0), 300, 0, alignx="center")
     pygame.display.update()
+
+
 
 
 
