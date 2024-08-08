@@ -32,8 +32,8 @@ pygame.init()
 from math import sqrt, degrees, atan
 from copy import deepcopy
 from random import randint
-SCREENLENGTH = 1000
-SCREENHEIGHT = 1000
+SCREENLENGTH = 700
+SCREENHEIGHT = 700
 FPS = 40
 num_displays = pygame.display.get_num_displays()
 
@@ -468,10 +468,10 @@ class Player:
     #player number determines the order the players play in starting from 0 not 1
     self.player_number = player_number
     self.color = (randint(0, 255), randint(0, 255), randint(0, 255))
-    self.money = 10
-    self.metal = 0
-    self.wood = 0
-    self.food = 0
+    self.money = 5
+    self.metal = 1
+    self.wood = 1
+    self.food = 1
     self.units = []
     self.buildings = []
     self.cities = []
@@ -1410,7 +1410,7 @@ while True:
     pygame.display.update()
 
   while status == "playing":
-    screen.fill((0, 0, 0))
+    screen.fill((255, 255, 255))
     transparent_screen.fill((255, 255, 255, 0))
     pressed_keys = pygame.key.get_pressed()
     mouse_pos = pygame.mouse.get_pos()
