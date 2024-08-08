@@ -468,7 +468,7 @@ class Player:
     #player number determines the order the players play in starting from 0 not 1
     self.player_number = player_number
     self.color = (randint(0, 255), randint(0, 255), randint(0, 255))
-    self.money = 5
+    self.money = 100000
     self.metal = 1
     self.wood = 1
     self.food = 1
@@ -676,6 +676,7 @@ class Unit:
   crossbowman_img = pygame.image.load("unit/crossbowman.png").convert_alpha()
   ship_img = pygame.image.load("unit/ship.png").convert_alpha()
   steeler_img = pygame.image.load("unit/steeler.png").convert_alpha()
+  img_dict = {"Man":man_img, "Rider":rider_img, "Swordsman":swordsman_img, "Spearman":spearman_img, "Axeman":axeman_img, "Shieldman":shieldman_img, "Archer":archer_img, "Crossbowman":crossbowman_img, "Ship":ship_img, "Steeler":steeler_img}
   def __init__(self, stats, x, y):
     #these are hex positions, not blit coords
     self.coord_x = x
@@ -1578,7 +1579,7 @@ while True:
         if not return_occupied(selected_object.coord_x, selected_object.coord_y, "unit"):
           #make ship if no dude is on it
           for unit_type in enumerate(Player.player_list[current_player].available_naval_units):
-            if button(0, option_x + unit_type[0] * (Unit.unit_size*2), Unit.unit_size * 2, Unit.unit_size * 2, 10, available = bool(Player.player_list[current_player].money >= unit_type[1][7][0] and Player.player_list[current_player].wood >= unit_type[1][7][1] and Player.player_list[current_player].metal >= unit_type[1][7][2] and Player.player_list[current_player].food >= unit_type[1][7][3])):
+            if button((Unit.unit_size*2)*(unit_type[0]//3), option_x + (unit_type[0]%3) * (Unit.unit_size*2), Unit.unit_size * 2, Unit.unit_size * 2, 10, available = bool(Player.player_list[current_player].money >= unit_type[1][7][0] and Player.player_list[current_player].wood >= unit_type[1][7][1] and Player.player_list[current_player].metal >= unit_type[1][7][2] and Player.player_list[current_player].food >= unit_type[1][7][3])):
               print(unit_type[1][0] + " naval unit is spawned")
               Player.player_list[current_player].money -= unit_type[1][7][0]
               Player.player_list[current_player].wood -= unit_type[1][7][1]
@@ -1588,16 +1589,15 @@ while True:
               unit_reset(Player.player_list[current_player].units[-1])
               Player.player_list[current_player].units[-1].turn_done = True
               print("turn done")
-            if unit_type[1][0] == "Ship":
-              screen.blit(Unit.ship_img, (0, option_x + 25 + unit_type[0] * 50))
-            text(20, unit_type[1][0], (0, 0, 0), 0, option_x + unit_type[0] * (Unit.unit_size*2))
-            display_resources(unit_type[1][7], 75, option_x + unit_type[0] * (Unit.unit_size*2))
+            screen.blit(Unit.img_dict[unit_type[1][0]], (0, option_x + 25 + unit_type[0] * 50))
+            text(20, unit_type[1][0], (0, 0, 0), (Unit.unit_size*2)*(unit_type[0]//3), option_x + (unit_type[0]%3) * (Unit.unit_size*2))
+            display_resources(unit_type[1][7], (Unit.unit_size*2)*(unit_type[0]//3) + 75, option_x + (unit_type[0]%3) * (Unit.unit_size*2))
     elif isinstance(selected_object, City) and selected_object in Player.player_list[current_player].cities:
       if not return_occupied(selected_object.coord_x, selected_object.coord_y, "unit"):
       #if a city is selected and there's no dude on it to avoid spawning more than 1 dude
         for unit_type in enumerate(Player.player_list[current_player].available_units):
           if selected_object.spawn_timer < selected_object.max_spawn_timer:
-            if button(0, option_x + unit_type[0] * (Unit.unit_size*2), Unit.unit_size * 2, Unit.unit_size * 2, 10, available = bool(Player.player_list[current_player].money >= unit_type[1][7][0] and Player.player_list[current_player].wood >= unit_type[1][7][1] and Player.player_list[current_player].metal >= unit_type[1][7][2] and Player.player_list[current_player].food >= unit_type[1][7][3])):
+            if button((Unit.unit_size*2)*(unit_type[0]//3), option_x + (unit_type[0]%3) * (Unit.unit_size*2), Unit.unit_size * 2, Unit.unit_size * 2, 10, available = bool(Player.player_list[current_player].money >= unit_type[1][7][0] and Player.player_list[current_player].wood >= unit_type[1][7][1] and Player.player_list[current_player].metal >= unit_type[1][7][2] and Player.player_list[current_player].food >= unit_type[1][7][3])):
               print(unit_type[1][0] + " unit is spawned")
               Player.player_list[current_player].money -= unit_type[1][7][0]
               Player.player_list[current_player].wood -= unit_type[1][7][1]
@@ -1610,21 +1610,10 @@ while True:
               Player.player_list[current_player].units[-1].turn_done = True
               print("turn done")
           else:
-            pygame.draw.rect(screen, (255, 0, 0), (0, option_x + unit_type[0] * (Unit.unit_size*2), Unit.unit_size * 2, Unit.unit_size * 2), width = 0, border_radius = 10)
-          if unit_type[1][0] == "Man":
-            screen.blit(Unit.man_img, (0, option_x + 25 + unit_type[0] * (Unit.unit_size*2)))
-          elif unit_type[1][0] == "Swordsman":
-            screen.blit(Unit.swordsman_img, (0, option_x + 25 + unit_type[0] * (Unit.unit_size*2)))
-          elif unit_type[1][0] == "Shieldman":
-            screen.blit(Unit.shieldman_img, (0, option_x + 25 + unit_type[0] * (Unit.unit_size*2)))  
-          elif unit_type[1][0] == "Archer":
-            screen.blit(Unit.archer_img, (0, option_x + 25 + unit_type[0] * (Unit.unit_size*2)))
-          elif unit_type[1][0] == "Crossbowman":
-            screen.blit(Unit.crossbowman_img, (0, option_x + 25 + unit_type[0] * (Unit.unit_size*2)))
-          elif unit_type[1][0] == "Rider":
-            screen.blit(Unit.rider_img, (0, option_x + 25 + unit_type[0] * (Unit.unit_size*2)))
-          text(20, unit_type[1][0], (0, 0, 0), 0, option_x + unit_type[0] * (Unit.unit_size*2))
-          display_resources(unit_type[1][7], 75, option_x + unit_type[0] * (Unit.unit_size*2))
+            pygame.draw.rect(screen, (255, 0, 0), ((Unit.unit_size*2)*(unit_type[0]//3), option_x + (unit_type[0]%3) * (Unit.unit_size*2), Unit.unit_size * 2, Unit.unit_size * 2), width = 0, border_radius = 10)
+          screen.blit(Unit.img_dict[unit_type[1][0]], ((Unit.unit_size*2)*(unit_type[0]//3), option_x + (unit_type[0]%3) * (Unit.unit_size*2) + 25))
+          text(20, unit_type[1][0], (0, 0, 0), (Unit.unit_size*2)*(unit_type[0]//3), option_x + (unit_type[0]%3) * (Unit.unit_size*2))
+          display_resources(unit_type[1][7], (Unit.unit_size*2)*(unit_type[0]//3) + 75, option_x + (unit_type[0]%3) * (Unit.unit_size*2))
       #upgrade button
       if selected_object.level < City.max_level:
         if button(25, 200, City.city_size*2, City.city_size*2, 10, available = bool(Player.player_list[current_player].money >= selected_object.cost[0] and Player.player_list[current_player].wood >= selected_object.cost[1] and Player.player_list[current_player].metal >= selected_object.cost[2] and Player.player_list[current_player].food >= selected_object.cost[2])):
