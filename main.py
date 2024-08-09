@@ -468,7 +468,7 @@ class Player:
     #player number determines the order the players play in starting from 0 not 1
     self.player_number = player_number
     self.color = (randint(0, 255), randint(0, 255), randint(0, 255))
-    self.money = 100000
+    self.money = 1000000
     self.metal = 1
     self.wood = 1
     self.food = 1
@@ -676,6 +676,7 @@ class Unit:
   crossbowman_img = pygame.image.load("unit/crossbowman.png").convert_alpha()
   ship_img = pygame.image.load("unit/ship.png").convert_alpha()
   steeler_img = pygame.image.load("unit/steeler.png").convert_alpha()
+  unit_max_stack = 3
   img_dict = {"Man":man_img, "Rider":rider_img, "Swordsman":swordsman_img, "Spearman":spearman_img, "Axeman":axeman_img, "Shieldman":shieldman_img, "Archer":archer_img, "Crossbowman":crossbowman_img, "Ship":ship_img, "Steeler":steeler_img}
   def __init__(self, stats, x, y):
     #these are hex positions, not blit coords
@@ -955,6 +956,7 @@ class Building:
   farm_img = pygame.image.load("building/farm.png").convert_alpha()
   plantation_img = pygame.image.load("building/plantation.png").convert_alpha()
   foundry_img = pygame.image.load("building/foundry.png").convert_alpha()
+  img_dict = {"Lumber Hut":lumber_hut_img, "Mine":mine_img, "Shipyard":shipyard_img, "Farm":farm_img, "Plantation":plantation_img, "Foundry":foundry_img}
   def __init__(self, stats, x, y):
     self.coord_x = x
     self.coord_y = y
@@ -1567,10 +1569,7 @@ while True:
             Player.player_list[current_player].metal -= selected_object.cost[2]
             Player.player_list[current_player].food -= selected_object.cost[3]
           if selected_object.upgraded_building != None:
-            if selected_object.upgraded_building[0] == "Foundry":
-              screen.blit(Building.foundry_img, (37.5, 262.5))
-            elif selected_object.upgraded_building[0] == "Plantation":
-              screen.blit(Building.plantation_img, (37.5, 262.5))
+            screen.blit(Building.img_dict[selected_object.upgraded_building[0]], (37.5, 262.5))
             text(20, selected_object.upgraded_building[0], (0, 0, 0), 75, 250, alignx = "center", aligny = "center")
             display_resources(selected_object.upgraded_building[1], 150, 237.5)
           text(25, "Upgrade", (0, 0, 0), 100, 225, alignx = "center", aligny = "center")
@@ -1579,7 +1578,7 @@ while True:
         if not return_occupied(selected_object.coord_x, selected_object.coord_y, "unit"):
           #make ship if no dude is on it
           for unit_type in enumerate(Player.player_list[current_player].available_naval_units):
-            if button((Unit.unit_size*2)*(unit_type[0]//3), option_x + (unit_type[0]%3) * (Unit.unit_size*2), Unit.unit_size * 2, Unit.unit_size * 2, 10, available = bool(Player.player_list[current_player].money >= unit_type[1][7][0] and Player.player_list[current_player].wood >= unit_type[1][7][1] and Player.player_list[current_player].metal >= unit_type[1][7][2] and Player.player_list[current_player].food >= unit_type[1][7][3])):
+            if button((Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2), Unit.unit_size * 2, Unit.unit_size * 2, 10, available = bool(Player.player_list[current_player].money >= unit_type[1][7][0] and Player.player_list[current_player].wood >= unit_type[1][7][1] and Player.player_list[current_player].metal >= unit_type[1][7][2] and Player.player_list[current_player].food >= unit_type[1][7][3])):
               print(unit_type[1][0] + " naval unit is spawned")
               Player.player_list[current_player].money -= unit_type[1][7][0]
               Player.player_list[current_player].wood -= unit_type[1][7][1]
@@ -1590,14 +1589,14 @@ while True:
               Player.player_list[current_player].units[-1].turn_done = True
               print("turn done")
             screen.blit(Unit.img_dict[unit_type[1][0]], (0, option_x + 25 + unit_type[0] * 50))
-            text(20, unit_type[1][0], (0, 0, 0), (Unit.unit_size*2)*(unit_type[0]//3), option_x + (unit_type[0]%3) * (Unit.unit_size*2))
-            display_resources(unit_type[1][7], (Unit.unit_size*2)*(unit_type[0]//3) + 75, option_x + (unit_type[0]%3) * (Unit.unit_size*2))
+            text(20, unit_type[1][0], (0, 0, 0), (Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2))
+            display_resources(unit_type[1][7], (Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack) + 75, option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2))
     elif isinstance(selected_object, City) and selected_object in Player.player_list[current_player].cities:
       if not return_occupied(selected_object.coord_x, selected_object.coord_y, "unit"):
       #if a city is selected and there's no dude on it to avoid spawning more than 1 dude
         for unit_type in enumerate(Player.player_list[current_player].available_units):
           if selected_object.spawn_timer < selected_object.max_spawn_timer:
-            if button((Unit.unit_size*2)*(unit_type[0]//3), option_x + (unit_type[0]%3) * (Unit.unit_size*2), Unit.unit_size * 2, Unit.unit_size * 2, 10, available = bool(Player.player_list[current_player].money >= unit_type[1][7][0] and Player.player_list[current_player].wood >= unit_type[1][7][1] and Player.player_list[current_player].metal >= unit_type[1][7][2] and Player.player_list[current_player].food >= unit_type[1][7][3])):
+            if button((Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2), Unit.unit_size * 2, Unit.unit_size * 2, 10, available = bool(Player.player_list[current_player].money >= unit_type[1][7][0] and Player.player_list[current_player].wood >= unit_type[1][7][1] and Player.player_list[current_player].metal >= unit_type[1][7][2] and Player.player_list[current_player].food >= unit_type[1][7][3])):
               print(unit_type[1][0] + " unit is spawned")
               Player.player_list[current_player].money -= unit_type[1][7][0]
               Player.player_list[current_player].wood -= unit_type[1][7][1]
@@ -1610,10 +1609,10 @@ while True:
               Player.player_list[current_player].units[-1].turn_done = True
               print("turn done")
           else:
-            pygame.draw.rect(screen, (255, 0, 0), ((Unit.unit_size*2)*(unit_type[0]//3), option_x + (unit_type[0]%3) * (Unit.unit_size*2), Unit.unit_size * 2, Unit.unit_size * 2), width = 0, border_radius = 10)
-          screen.blit(Unit.img_dict[unit_type[1][0]], ((Unit.unit_size*2)*(unit_type[0]//3), option_x + (unit_type[0]%3) * (Unit.unit_size*2) + 25))
-          text(20, unit_type[1][0], (0, 0, 0), (Unit.unit_size*2)*(unit_type[0]//3), option_x + (unit_type[0]%3) * (Unit.unit_size*2))
-          display_resources(unit_type[1][7], (Unit.unit_size*2)*(unit_type[0]//3) + 75, option_x + (unit_type[0]%3) * (Unit.unit_size*2))
+            pygame.draw.rect(screen, (255, 0, 0), ((Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2), Unit.unit_size * 2, Unit.unit_size * 2), width = 0, border_radius = 10)
+          screen.blit(Unit.img_dict[unit_type[1][0]], ((Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2) + 25))
+          text(20, unit_type[1][0], (0, 0, 0), (Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2))
+          display_resources(unit_type[1][7], (Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack) + 75, option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2))
       #upgrade button
       if selected_object.level < City.max_level:
         if button(25, 200, City.city_size*2, City.city_size*2, 10, available = bool(Player.player_list[current_player].money >= selected_object.cost[0] and Player.player_list[current_player].wood >= selected_object.cost[1] and Player.player_list[current_player].metal >= selected_object.cost[2] and Player.player_list[current_player].food >= selected_object.cost[2])):
@@ -1645,15 +1644,7 @@ while True:
               Player.player_list[current_player].food -= a_building_type[1][1][3]
               Player.player_list[current_player].buildings.append(Building(a_building_type[1], selected_object.coord_x, selected_object.coord_y))
             #display the building images on the buttons
-            if a_building_type[1][0] == "Lumber Hut":
-              screen.blit(Building.lumber_hut_img, (SCREENLENGTH - Building.building_size*2 + 25, 250 + a_building_type[0] * (Building.building_size*2)))
-            elif a_building_type[1][0] == "Mine":
-              screen.blit(Building.mine_img, (SCREENLENGTH - Building.building_size*2 + 25, 250 + a_building_type[0] * (Building.building_size*2)))
-            elif a_building_type[1][0] == "Shipyard":
-              screen.blit(Building.shipyard_img, (SCREENLENGTH - Building.building_size*2 + 25, 250 + a_building_type[0] * (Building.building_size*2)))
-            elif a_building_type[1][0] == "Farm":
-              screen.blit(Building.farm_img, (SCREENLENGTH - Building.building_size*2 + 25, 250 + a_building_type[0] * (Building.building_size*2)))
-            #elif building_type...
+            screen.blit(Building.img_dict[a_building_type[1][0]], (SCREENLENGTH - Building.building_size*2 + 25, 250 + a_building_type[0] * (Building.building_size*2)))
             text(20, a_building_type[1][0], (0, 0, 0), SCREENLENGTH - 150, 200 + a_building_type[0] * (Building.building_size*2))
             text(20, "Terrain: " + ", ".join(a_building_type[1][4]), (0, 0, 0), SCREENLENGTH - 150, 210 + a_building_type[0] * (Building.building_size*2))
             display_resources(a_building_type[1][1], SCREENLENGTH - 25, 250 + a_building_type[0] * (Building.building_size*2))
