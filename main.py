@@ -70,7 +70,7 @@ status = "home"
 #for images that that don't undergo these transformations, use the original image as the image to transform to save code length
 
 #break
-#print(pygame.font.get_fonts())
+print(pygame.font.get_fonts())
 #good fonts: harrington, 
 def text(size, message, color, textx, texty, alignx = "left", aligny = "top", font = "harrington"):
   myfont = pygame.font.SysFont(font, size)
@@ -321,7 +321,6 @@ for row in enumerate(TERRAIN):
     if [coordx, coordy] in villages:
       features.append("village")
     MAP[coordy].append(Location(coordx, coordy, tile[1], features))
-print(MAP)
 #important variables for selection and stuff
 selected_object = None
 selected_collision_range = 75
@@ -468,7 +467,7 @@ class Player:
     #player number determines the order the players play in starting from 0 not 1
     self.player_number = player_number
     self.color = (randint(0, 255), randint(0, 255), randint(0, 255))
-    self.money = 1000000
+    self.money = 5
     self.metal = 1
     self.wood = 1
     self.food = 1
