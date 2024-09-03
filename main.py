@@ -467,10 +467,10 @@ class Player:
     #player number determines the order the players play in starting from 0 not 1
     self.player_number = player_number
     self.color = (randint(0, 255), randint(0, 255), randint(0, 255))
-    self.money = 5
-    self.metal = 1
-    self.wood = 1
-    self.food = 1
+    self.money = 100000
+    self.metal = 100000
+    self.wood = 10000
+    self.food = 10000
     self.units = []
     self.buildings = []
     self.cities = []
@@ -629,8 +629,8 @@ shieldman = ["Shieldman", 6, 4, 15, 5, 1, 1, [5, 0, 10, 0], 5, [["move"], ["atta
 archer = ["Archer", 7, 1, 8, 4, 2, 2, [5, 3, 0, 0], 7, [["attack", "move"], ["move", "heal"]], []]
 crossbowman = ["Crossbowman", 15, 1, 5, 2, 3, 2, [25, 10, 5, 3], 7, [["move", "attack"], ["attack", "move"], ["heal"]], []]
 rider = ["Rider", 7, 2, 9, 5, 1, 3, [10, 0, 0, 3], 6, [["move", "attack"], ["move", "heal"]], []]
-ship = ["Ship", 10, 3, 10, 3, 1, 2, [15, 5, 0, 0], 0, [["move", "attack"], ["move", "heal", "move"]], ["float"]]
-steeler = ["Steeler", 15, 4, 30, 8, 1, 2, [20, 0, 3, 0], 0, [["move", "attack", "move"], ["heal"]], ["float"]]
+ship = ["Ship", 0.5, 1, 10, 3, 0, 0, [15, 5, 0, 0], 0, [["move", "attack"], ["move", "heal", "move"]], ["float"]]
+steeler = ["Steeler", 1.5, 1.5, 30, 8, 0, -1, [20, 0, 3, 0], 0, [["move", "attack", "move"], ["heal"]], ["float"]]
 
 #building stats
 #var = ["name", list, cost, production, production speed, possible terrain, abilities, upgrade into]
@@ -915,6 +915,14 @@ def display_action_sequence(action_sequence, action_index, x, y, mini = False):
       screen.blit(attack, (action[0]*size + x, y))
     elif action[1] == "heal":
       screen.blit(heal, (action[0]*size + x, y))
+
+def upgrade_to_naval(old_unit, new_unit):
+  #old and new unit should be unit objects
+  new_unit.attack *= old_unit.attack
+  new_unit.defense *= old_unit.defense
+  new_unit.movement += old_unit.movement
+  new_unit.range += old_unit.range
+  return new_unit
 
 '''Player.player_list[0].units.append(Unit(man, 3, 3))
 Player.player_list[0].units.append(Unit(man, 4, 4))
@@ -1574,8 +1582,8 @@ while True:
           text(25, "Upgrade", (0, 0, 0), 100, 225, alignx = "center", aligny = "center")
       #build ships
       if "shipbuilding" in selected_object.abilities:
-        if not return_occupied(selected_object.coord_x, selected_object.coord_y, "unit"):
-          #make ship if no dude is on it
+        if return_occupied(selected_object.coord_x, selected_object.coord_y, "unit") and "float" not in return_occupied(selected_object.coord_x, selected_object.coord_y, "unit").abilities:
+          #upgrade to ship if there is a dude is on it and the dude is not a ship
           for unit_type in enumerate(Player.player_list[current_player].available_naval_units):
             if button((Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2), Unit.unit_size * 2, Unit.unit_size * 2, 10, available = bool(Player.player_list[current_player].money >= unit_type[1][7][0] and Player.player_list[current_player].wood >= unit_type[1][7][1] and Player.player_list[current_player].metal >= unit_type[1][7][2] and Player.player_list[current_player].food >= unit_type[1][7][3])):
               print(unit_type[1][0] + " naval unit is spawned")
@@ -1583,9 +1591,14 @@ while True:
               Player.player_list[current_player].wood -= unit_type[1][7][1]
               Player.player_list[current_player].metal -= unit_type[1][7][2]
               Player.player_list[current_player].food -= unit_type[1][7][3]
-              Player.player_list[current_player].units.append(Unit(unit_type[1], selected_object.coord_x, selected_object.coord_y))
-              unit_reset(Player.player_list[current_player].units[-1])
-              Player.player_list[current_player].units[-1].turn_done = True
+              old_unit = return_occupied(selected_object.coord_x, selected_object.coord_y, "unit")
+              #create a new naval unit with the correctly altered stats using the old unit and the naval unit stats
+              new_unit = upgrade_to_naval(old_unit, Unit(unit_type[1], selected_object.coord_x, selected_object.coord_y))
+              #replace old unit with new unit
+              Player.player_list[current_player].units[Player.player_list[current_player].units.index(old_unit)] = new_unit
+              unit_reset(Player.player_list[current_player].units[Player.player_list[current_player].units.index(new_unit)])
+              Player.player_list[current_player].units[Player.player_list[current_player].units.index(new_unit)].turn_done = True
+              del(old_unit)
               print("turn done")
             screen.blit(Unit.img_dict[unit_type[1][0]], (0, option_x + 25 + unit_type[0] * 50))
             text(20, unit_type[1][0], (0, 0, 0), (Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2))
@@ -1728,7 +1741,7 @@ while True:
           for tile in enumerate(row[1]):
             if circle_collided(mouse_pos[0], mouse_pos[1], 1, tile[1].display_x + offset_x + hex_size*sqrt(3)/4, tile[1].display_y + offset_y + hex_size/2, selected_collision_range/2):
               if tile[0] >= 0 and tile[0] <= map_length and row[0] >= 0 and row[0] <= map_length:
-                if MAP[tile[0]][row[0]] != "":
+                if MAP[tile[0]][row[0]].terrain != "":
                   if not same_space((tile[1].coord_x, tile[1].coord_y)):
                     btn_pressed_this_frame = True
                     selected_object = tile[1]
