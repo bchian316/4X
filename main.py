@@ -636,8 +636,9 @@ shieldman = ["Shieldman", 15, 5, 6, 4, 1, 1, [5, 0, 10, 0], 5, [["move"], ["atta
 #catapult can move 1 or attack 1
 archer = ["Archer", 8, 4, 7, 1, 2, 2, [5, 3, 0, 0], 7, [["attack", "move"], ["move", "heal"]], []]
 crossbowman = ["Crossbowman", 5, 2, 15, 1, 3, 2, [25, 10, 5, 3], 7, [["move", "attack"], ["attack", "move"], ["heal"]], []]
-medic = ["Medic", 10, 10, 0, 2, 1, 1, [0, 0, 0, 0], 4, [["move", "heal other"], ["move", "heal"]], []]
+medic = ["Medic", 10, 10, 0, 2, 1, 1, [10, 3, 1, 1], 4, [["move", "heal other"], ["move", "heal"]], []]
 rider = ["Rider", 9, 5, 7, 2, 1, 3, [10, 0, 0, 3], 6, [["move", "attack"], ["move", "heal"]], []]
+knight = ["Knight", 13, 6, 7, 1, 1, 3, [10, 0, 0, 3], 9, [["move", "attack"], ["attack", "move"], ["heal"]], []]
 ship = ["Ship", 10, 3, 0.5, 1, 0, 0, [15, 5, 0, 0], 0, [["move", "attack"], ["move", "heal", "move"]], ["float"]]
 steeler = ["Steeler", 30, 8, 1.5, 1.5, 0, -1, [20, 0, 3, 0], 0, [["move", "attack", "move"], ["heal"]], ["float"]]
 
@@ -656,8 +657,6 @@ farm = ["Farm", [15, 0, 0, 3], [0, 0, 10], 1, ["plains", "forest", "mountain", "
 #make it so all players can make units
 for _ in Player.player_list:
   _.available_units.append(man)
-  #change afterwards
-  _.available_units.append(medic)
   _.available_naval_units.append(ship)
 
 '''Player.player_list[0].available_actions.append("chop")
@@ -678,6 +677,7 @@ class Unit:
   unit_size = 50
   man_img = pygame.image.load("unit/man.png").convert_alpha()
   rider_img = pygame.image.load("unit/rider.png").convert_alpha()
+  knight_img = pygame.image.load("unit/knight.png").convert_alpha()
   swordsman_img = pygame.image.load("unit/swordsman.png").convert_alpha()
   spearman_img = pygame.image.load("unit/spearman.png").convert_alpha()
   axeman_img = pygame.image.load("unit/axeman.png").convert_alpha()
@@ -688,7 +688,7 @@ class Unit:
   ship_img = pygame.image.load("unit/ship.png").convert_alpha()
   steeler_img = pygame.image.load("unit/steeler.png").convert_alpha()
   unit_max_stack = 3
-  img_dict = {"Man":man_img, "Rider":rider_img, "Swordsman":swordsman_img, "Spearman":spearman_img, "Axeman":axeman_img, "Shieldman":shieldman_img, "Archer":archer_img, "Crossbowman":crossbowman_img, "Medic":medic_img, "Ship":ship_img, "Steeler":steeler_img}
+  img_dict = {"Man":man_img, "Rider":rider_img, "Knight":knight_img, "Swordsman":swordsman_img, "Spearman":spearman_img, "Axeman":axeman_img, "Shieldman":shieldman_img, "Archer":archer_img, "Crossbowman":crossbowman_img, "Medic":medic_img, "Ship":ship_img, "Steeler":steeler_img}
   def __init__(self, stats, x, y):
     #these are hex positions, not blit coords
     self.coord_x = x
@@ -1256,6 +1256,8 @@ forestry_img = pygame.image.load("tech/forestry.png").convert_alpha()
 forestry = ["Forestry", 10, 250, 300, logging, None, lumber_hut, None, None, None, forestry_img]
 reforestation_img = pygame.image.load("tech/reforestation.png").convert_alpha()
 reforestation = ["Reforestation", 20, 250, 100, forestry, None, None, None, "grow", None, reforestation_img]
+medicine_img = pygame.image.load("tech/medicine.png").convert_alpha()
+medicine = ["Medicine", 20, 150, 100, forestry, medic, None, None, None, None, medicine_img]
 climbing_img = pygame.image.load("tech/climbing.png").convert_alpha()
 climbing = ["Climbing", 5, 350, 500, None, None, None, None, None, "mountain", climbing_img]
 smithery_img = pygame.image.load("tech/smithery.png").convert_alpha()
@@ -1272,15 +1274,20 @@ swimming_img = pygame.image.load("tech/swimming.png").convert_alpha()
 swimming = ["Swimming", 5, 500, 500, None, None, None, None, None, "water", swimming_img]
 sailing_img = pygame.image.load("tech/sailing.png").convert_alpha()
 sailing = ["Sailing", 10, 600, 300, swimming, None, shipyard, None, None, None, sailing_img]
+trade = ["Trade"]
+aquaculture_img = pygame.image.load("tech/aquaculture.png").convert_alpha()
+aquaculture = ["Aquaculture", 10, 600, 100, trade, None, shipyard, None, None, None, sailing_img]
 harvesting_img = pygame.image.load("tech/harvesting.png").convert_alpha()
 harvesting = ["Harvesting", 5, 800, 500, None, None, None, None, "cultivate", None, harvesting_img]
+riding_img = pygame.image.load("tech/riding.png").convert_alpha()
+riding = ["Riding", 12, 850, 300, harvesting, rider, None, None, None, None, riding_img]
+honor_img = pygame.image.load("tech/honor.png").convert_alpha()
+honor = ["Honor", 12, 950, 100, riding, knight, None, None, None, None, honor_img]
 agriculture_img = pygame.image.load("tech/agriculture.png").convert_alpha()
 agriculture = ["Agriculture", 10, 750, 300, harvesting, None, farm, None, None, None, agriculture_img]
 fertilization_img = pygame.image.load("tech/fertilization.png").convert_alpha()
 fertilization = ["Fertilization", 25, 775, 100, agriculture, None, None, plantation, None, None, fertilization_img]
-riding_img = pygame.image.load("tech/riding.png").convert_alpha()
-riding = ["Riding", 12, 850, 300, harvesting, rider, None, None, None, None, riding_img]
-all_techs = [logging, archery, engineering, forestry, reforestation, climbing, smithery, sharpening, armoring, mining, smelting, swimming, sailing, harvesting, riding, agriculture, fertilization]
+all_techs = [logging, archery, engineering, forestry, reforestation, medicine, climbing, smithery, sharpening, armoring, mining, smelting, swimming, sailing, harvesting, riding, honor, agriculture, fertilization]
 
 animating = False
 animation_list = []
