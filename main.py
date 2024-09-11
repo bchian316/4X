@@ -650,7 +650,7 @@ foundry = ["Foundry", [20, 0, 5, 0], [0, 20, 0], 2, None, [], None]
 mine = ["Mine", [20, 0, 2, 0], [0, 5, 0], 2, ["mountain"], [], foundry]
 shipyard = ["Shipyard", [25, 3, 0, 0], [0, 0, 0], 1, ["water"], ["shipbuilding"], None]
 port = ["Port", [30, 3, 3, 3], [20, 20, 20], 3, [], ["shipbuilding"], None]
-market = ["Market", [20, 1, 1, 1], [3, 3, 3], 2, ["market"], [], port]
+market = ["Market", [20, 1, 1, 1], [3, 3, 3], 2, ["water"], [], port]
 plantation = ["Plantation", [30, 5, 0, 0], [0, 0, 20], 1, None, ["cultivate"], None]
 farm = ["Farm", [15, 0, 0, 3], [0, 0, 10], 1, ["plains", "forest", "mountain", "water"], ["cultivate"], plantation]
 
@@ -996,10 +996,11 @@ class Building:
   lumber_hut_img = pygame.image.load("building/lumber hut.png").convert_alpha()
   mine_img = pygame.image.load("building/mine.png").convert_alpha()
   shipyard_img = pygame.image.load("building/shipyard.png").convert_alpha()
+  market_img = pygame.image.load("building/market.png").convert_alpha()
   farm_img = pygame.image.load("building/farm.png").convert_alpha()
   plantation_img = pygame.image.load("building/plantation.png").convert_alpha()
   foundry_img = pygame.image.load("building/foundry.png").convert_alpha()
-  img_dict = {"Lumber Hut":lumber_hut_img, "Mine":mine_img, "Shipyard":shipyard_img, "Farm":farm_img, "Plantation":plantation_img, "Foundry":foundry_img}
+  img_dict = {"Lumber Hut":lumber_hut_img, "Mine":mine_img, "Shipyard":shipyard_img, "Market":market_img, "Farm":farm_img, "Plantation":plantation_img, "Foundry":foundry_img}
   def __init__(self, stats, x, y):
     self.coord_x = x
     self.coord_y = y
@@ -1274,9 +1275,10 @@ swimming_img = pygame.image.load("tech/swimming.png").convert_alpha()
 swimming = ["Swimming", 5, 500, 500, None, None, None, None, None, "water", swimming_img]
 sailing_img = pygame.image.load("tech/sailing.png").convert_alpha()
 sailing = ["Sailing", 10, 600, 300, swimming, None, shipyard, None, None, None, sailing_img]
-trade = ["Trade"]
+trade_img = pygame.image.load("tech/trade.png").convert_alpha()
+trade = ["Trade", 10, 650, 300, swimming, None, market, None, None, None, trade_img]
 aquaculture_img = pygame.image.load("tech/aquaculture.png").convert_alpha()
-aquaculture = ["Aquaculture", 10, 600, 100, trade, None, shipyard, None, None, None, sailing_img]
+aquaculture = ["Aquaculture", 10, 600, 100, trade, None, None, None, "harvest", None, aquaculture_img]
 harvesting_img = pygame.image.load("tech/harvesting.png").convert_alpha()
 harvesting = ["Harvesting", 5, 800, 500, None, None, None, None, "cultivate", None, harvesting_img]
 riding_img = pygame.image.load("tech/riding.png").convert_alpha()
@@ -1287,7 +1289,7 @@ agriculture_img = pygame.image.load("tech/agriculture.png").convert_alpha()
 agriculture = ["Agriculture", 10, 750, 300, harvesting, None, farm, None, None, None, agriculture_img]
 fertilization_img = pygame.image.load("tech/fertilization.png").convert_alpha()
 fertilization = ["Fertilization", 25, 775, 100, agriculture, None, None, plantation, None, None, fertilization_img]
-all_techs = [logging, archery, engineering, forestry, reforestation, medicine, climbing, smithery, sharpening, armoring, mining, smelting, swimming, sailing, harvesting, riding, honor, agriculture, fertilization]
+all_techs = [logging, archery, engineering, forestry, reforestation, medicine, climbing, smithery, sharpening, armoring, mining, smelting, swimming, sailing, trade, aquaculture, harvesting, riding, honor, agriculture, fertilization]
 
 animating = False
 animation_list = []
