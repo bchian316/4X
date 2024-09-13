@@ -116,30 +116,6 @@ def circle_collided(x1, y1, radius1, x2, y2, radius2):
   if distance <= radius1 + radius2:
     return True
   return False
-def circle_rect_collided(rect_x, rect_y, rect_width, rect_height, circle_x, circle_y, circle_diameter):
-    #circle_x and circle_y are the left top anchor of the circle (similar to a rectangle); they are not the coordinates to the circle center
-    circle_radius = circle_diameter / 2
-    circle_center_x = circle_x + circle_radius
-    circle_center_y = circle_y + circle_radius
-
-    if circle_center_x < rect_x:
-      closest_x = rect_x
-    elif circle_center_x > rect_x + rect_width:
-      closest_x = rect_x + rect_width
-    else:
-      closest_x = circle_center_x
-    if circle_center_y < rect_y:
-      closest_y = rect_y
-    elif circle_center_y > rect_y + rect_height:
-      closest_y = rect_y + rect_height
-    else:
-      closest_y = circle_center_y
-
-    distance_x = circle_center_x - closest_x
-    distance_y = circle_center_y - closest_y
-    distance = sqrt(distance_x**2 + distance_y**2)
-
-    return distance <= circle_radius
 def get_vel(x1, y1, x2, y2, speed):
   distancex = x2 - x1
   distancey = y2 - y1
@@ -150,84 +126,7 @@ def get_vel(x1, y1, x2, y2, speed):
   velx = distancex/divisor
   vely = distancey/divisor
   return velx, vely
-def get_angle(x_start, y_start, target_x, target_y):
-  #ANGLES ARE COUNTERCLOCKWISE
-  #ALWAYS FROM START TO TARGET
-  y_distance = abs(y_start - target_y)
-  x_distance = abs(x_start - target_x)
-  if (x_distance == 0):
-    if (target_y > y_start):
-      angle = 0
-    if (target_y < y_start):
-      angle = 180
-  elif (y_distance == 0):
-    if (target_x > x_start):
-      angle = 270
-    if (target_x < x_start):
-      angle = 90
-  else:
-    #this part uses the right triangle created by x_distance, y_distance, and the line connect the start and the target (hypotenuse)
-    #Lets say the angle from the start to target (the angle we're trying to find) is theta
-    #the opposite side of theta will always be the y_distance
-    #the adjacent side of theta will always be the x_distance
-    #because tangent is opposite/adjacent, tan(theta) = y_distance/x_distance
-    #by isolating theta, we can arctangent (tan-1) both sides, which leaves theta = arctangent(y_distance/x_distance)
-    #atan returns the angle in radians, so we just convert it into degrees
-    angle = degrees(atan(y_distance/x_distance))
-    if ((target_x < x_start) and (target_y > y_start)):
-      angle = 90 + angle
-    elif ((target_x > x_start) and (target_y > y_start)):
-      angle = 270 - angle
-    elif (target_x < x_start) and (target_y < y_start):
-      angle = 90 - angle
-    elif (target_x > x_start) and (target_y < y_start):
-      angle = 270 + angle
-  return angle
-def rotate_center(img, og_img, deg, og_deg = 0):
-  #this rotates an image around its center counterclockwise (no x and y parameters needed)
-  #use og_image as the raw image directly loaded from the file to prevent image distortion and multiple sizing increases (because of the rotation)
-  og_width, og_height = og_img.get_size()
-  og_center = (og_width/2, og_height/2)
-  img = pygame.transform.rotate(og_img, deg-og_deg)
-  width, height = img.get_size()
-  center = (width/2, height/2)
-  offsetx = center[0] - og_center[0]
-  offsety = center[1] - og_center[1]
-  return img, offsetx, offsety
-  #find offset to center to make it equal to og_center
-  #subtract offset from regular image coords to make the center constant
-def pivot(angle, offset):
-  #counterclockwise
-  #offset should be a pygame.math.Vector2 class with its arguments as the difference from the pivot point to the center of the image
-  #for example, if the pivot point is 25 pixels to the left and 50 pixels below of the center of the image, then the pygame.math.Vector2 should be (25, -50)
-  #pivot_point_x + offset_x = image_center_x
-  #pivot_point_y + offset_y = image_center_y
-  #USE THE ORIGINAL IMAGE FOR THIS NOT THE UPDATE IMAGE THATS BEING DISPLAYED
-    rotated_offset = offset.rotate(angle)  # Rotate the offset vector.
-  #the rotation should be counterclockwise, but in reality is clockwise because pygame has an inverted y-axis
-    # Add the offset vector to the center/pivot point to shift the rect.
-    return rotated_offset # Return the rotated image
-    #add rotated_offset to the x and y coordinates when you display the image
-'''class Timer:
-  def __init__(self, seconds, running = False):
-    self.start_time = time()
-    self.end_time = time()
-    self.time = seconds
-    self.running = running
-  def update(self):
-    if self.running:
-      self.end_time = time()
-      if self.end_time - self.start_time >= self.time:
-        return True
-    return False
-  def start(self, seconds = None):
-    if seconds != None:
-      self.time = seconds
-    self.running = True
-    self.start_time = time()
-    self.end_time = time()
-  def stop(self):
-    self.running = False'''
+
 hex_size = 100
 offset_x = 250
 offset_y = 100
@@ -300,10 +199,10 @@ TERRAIN = [["plains", "plains", "mountain", "plains", "forest", "", "", "", ""],
 #this is the side length of the map
 map_length = len(TERRAIN)-1
 #useless for now
-crop = [[5, 1], [5, 2], [6, 2], [3, 3]]
-harvested_crop = []
-seaweed = [[6, 7], [7, 7], [8, 7], [6, 8], [7, 8]]
-villages = [[0, 2], [1, 0], [2, 4], [5, 1], [5, 7], [6, 6], [3, 7]]
+CROP = [[5, 1], [5, 2], [6, 2], [3, 3]]
+HARVESTED_CROP = []
+SEAWEED = [[6, 7], [7, 7], [8, 7], [6, 8], [7, 8]]
+VILLAGES = [[0, 2], [1, 0], [2, 4], [5, 1], [5, 7], [6, 6], [3, 7]]
 MAP = []
 #configure map
 for row in enumerate(TERRAIN):
@@ -312,13 +211,13 @@ for row in enumerate(TERRAIN):
   for tile in enumerate(row[1]):
     coordx = tile[0]
     features = []
-    if [coordx, coordy] in crop:
+    if [coordx, coordy] in CROP:
       features.append("crop")
-    if [coordx, coordy] in harvested_crop:
+    if [coordx, coordy] in HARVESTED_CROP:
       features.append("harvested crop")
-    if [coordx, coordy] in seaweed:
+    if [coordx, coordy] in SEAWEED:
       features.append("seaweed")
-    if [coordx, coordy] in villages:
+    if [coordx, coordy] in VILLAGES:
       features.append("village")
     MAP[coordy].append(Location(coordx, coordy, tile[1], features))
 #important variables for selection and stuff
@@ -415,47 +314,6 @@ def shadeTile(coord_x, coord_y, color):
   pygame.draw.polygon(transparent_screen, color, [point1, point2, point3, point4, point5, point6])
 
 
-def display_units(units, offset_x, offset_y, p_number, p_color, availability_marker_size = 10):
-  global current_player
-  #p_number is the player number
-  #this displays a list of specific units (a unit type)
-  #units would be a list containing a specific unit type
-  for a_unit in units:
-    shadeTile(a_unit.coord_x, a_unit.coord_y, p_color)
-    screen.blit(a_unit.image, (a_unit.display_x + offset_x, a_unit.display_y + offset_y))
-    #this will display a text version of the unit health: text(25, str(a_unit.health) + "/" + str(a_unit.max_health), (255, 0, 0), a_unit.display_x + unit_size + offset_x, a_unit.display_y + offset_y)
-    #health bar:
-    pygame.draw.rect(screen, (255, 0, 0), (a_unit.display_x + offset_x, a_unit.display_y + offset_y - 12.5, Unit.unit_size, 10))
-    pygame.draw.rect(screen, (0, 255, 0), (a_unit.display_x + offset_x, a_unit.display_y + offset_y - 12.5, Unit.unit_size*(a_unit.health/a_unit.max_health), 10))
-    text(15, str(a_unit.health) + "/" + str(a_unit.max_health), (0, 0, 0), a_unit.display_x + offset_x + Unit.unit_size/2, a_unit.display_y + offset_y - 7.5, alignx = "center", aligny = "center")
-    text(25, str(p_number + 1), (255, 255, 255), a_unit.display_x + offset_x + Unit.unit_size/2, a_unit.display_y + offset_y + Unit.unit_size/2, alignx = "center", aligny = "center")
-    if p_number == current_player:
-      pygame.draw.circle(screen, (255, 0, 0), (a_unit.display_x + offset_x, a_unit.display_y + offset_y), availability_marker_size)
-      if not a_unit.turn_done:
-        pygame.draw.circle(screen, (0, 255, 0), (a_unit.display_x + offset_x, a_unit.display_y + offset_y), availability_marker_size)
-    else:
-      pygame.draw.circle(screen, (125, 125, 125), (a_unit.display_x + offset_x, a_unit.display_y + offset_y), availability_marker_size)
-    text(30, str(p_number + 1), (0, 0, 0), a_unit.display_x + offset_x, a_unit.display_y + offset_y, alignx = "center", aligny = "center")
-def unit_reset(unit):
-  unit.action = None
-  unit.action_index = 0
-  unit.action_sequence = []
-  unit.action_range = [[unit.coord_x, unit.coord_y]]
-
-def calculate_damage(attacker, defender):
-  attack_damage = (attacker.health/attacker.max_health)*attacker.attack
-  defend_damage = (defender.health/defender.max_health)*defender.defense
-  #3 will affect the general damage of all attacks
-  #attack_damage *= 3
-  #no damage scaler
-  damage = attack_damage/defend_damage
-  if damage < 0:
-    damage = 0
-  return round(damage)
-
-def calculate_heal(healer, target):
-  #DO THIS LATER
-  pass
 
 class Player:
   #contains all the players
@@ -485,6 +343,53 @@ class Player:
     self.available_naval_units = []
     #available terrain the player's units can be on
     self.available_terrain = ["plains", "forest"]
+  def display_units(self, availability_marker_size = 10):
+    global current_player
+    #p_number is the player number
+    #this displays a list of specific units (a unit type)
+    #units would be a list containing a specific unit type
+    for a_unit in self.units:
+      shadeTile(a_unit.coord_x, a_unit.coord_y, self.color)
+      screen.blit(a_unit.image, (a_unit.display_x + offset_x, a_unit.display_y + offset_y))
+      #this will display a text version of the unit health: text(25, str(a_unit.health) + "/" + str(a_unit.max_health), (255, 0, 0), a_unit.display_x + unit_size + offset_x, a_unit.display_y + offset_y)
+      #health bar:
+      pygame.draw.rect(screen, (255, 0, 0), (a_unit.display_x + offset_x, a_unit.display_y + offset_y - 12.5, Unit.unit_size, 10))
+      pygame.draw.rect(screen, (0, 255, 0), (a_unit.display_x + offset_x, a_unit.display_y + offset_y - 12.5, Unit.unit_size*(a_unit.health/a_unit.max_health), 10))
+      text(15, str(a_unit.health) + "/" + str(a_unit.max_health), (0, 0, 0), a_unit.display_x + offset_x + Unit.unit_size/2, a_unit.display_y + offset_y - 7.5, alignx = "center", aligny = "center")
+      #text(25, str(self.player_number + 1), (255, 255, 255), a_unit.display_x + offset_x + Unit.unit_size/2, a_unit.display_y + offset_y + Unit.unit_size/2, alignx = "center", aligny = "center")
+      if self.player_number == current_player:
+        pygame.draw.circle(screen, (255, 0, 0), (a_unit.display_x + offset_x, a_unit.display_y + offset_y), availability_marker_size)
+        if not a_unit.turn_done:
+          pygame.draw.circle(screen, (0, 255, 0), (a_unit.display_x + offset_x, a_unit.display_y + offset_y), availability_marker_size)
+      else:
+        pygame.draw.circle(screen, (125, 125, 125), (a_unit.display_x + offset_x, a_unit.display_y + offset_y), availability_marker_size)
+      text(30, str(self.player_number + 1), (0, 0, 0), a_unit.display_x + offset_x, a_unit.display_y + offset_y, alignx = "center", aligny = "center")
+  def display_buildings(self):
+    #p_number is the player number
+    #this displays a list of specific units (a unit type)
+    #units would be a list containing a specific unit type
+    for a_building in self.buildings:
+      shadeTile(a_building.coord_x, a_building.coord_y, self.color)
+      screen.blit(a_building.image, (a_building.display_x + offset_x, a_building.display_y + offset_y))
+      if a_building.production[0] > 0 or a_building.production[1] > 0 or a_building.production[2] > 0:
+        pygame.draw.rect(screen, (122, 122, 122), (a_building.display_x + offset_x, a_building.display_y + offset_y + Building.building_size*0.85, Building.building_size, 10))
+        pygame.draw.rect(screen, (255, 0, 255), (a_building.display_x + offset_x, a_building.display_y + offset_y + Building.building_size*0.85, Building.building_size*((a_building.production_timer + 1)/a_building.production_time), 10))
+        #the +1 is for UI ease
+        if a_building.production_timer + 1 == a_building.production_time:
+          pygame.draw.rect(screen, (0, 255, 0), (a_building.display_x + offset_x, a_building.display_y + offset_y + Building.building_size*0.85, Building.building_size, 10))
+        for level_counter in range(a_building.production_time + 1):
+          pygame.draw.line(screen, (0, 0, 0), (a_building.display_x + offset_x + level_counter*(Building.building_size/a_building.production_time), a_building.display_y + offset_y + Building.building_size*0.85), (a_building.display_x + offset_x + level_counter*(Building.building_size/a_building.production_time), a_building.display_y + offset_y + Building.building_size*0.85 + 10), 2)
+      text(25, str(self.player_number + 1), (255, 255, 255), a_building.display_x + offset_x + Building.building_size/2, a_building.display_y + offset_y + Building.building_size/2, alignx = "center", aligny = "center")
+  def display_cities(self):
+    for a_city in self.cities:
+      shadeTile(a_city.coord_x, a_city.coord_y, self.color)
+      screen.blit(a_city.image, (a_city.display_x + offset_x, a_city.display_y + offset_y))
+      pygame.draw.rect(screen, (0, 255, 0), (a_city.display_x + offset_x, a_city.display_y + offset_y + City.city_size*0.85, City.city_size, 10))
+      pygame.draw.rect(screen, (0, 0, 255), (a_city.display_x + offset_x, a_city.display_y + offset_y + City.city_size*0.85, City.city_size*(a_city.spawn_timer/a_city.max_spawn_timer), 10))
+      if a_city.spawn_timer >= a_city.max_spawn_timer:
+        pygame.draw.rect(screen, (255, 0, 0), (a_city.display_x + offset_x, a_city.display_y + offset_y + City.city_size*0.85, City.city_size*(a_city.spawn_timer/a_city.max_spawn_timer), 10))
+      for level_counter in range(a_city.level + 1):
+        pygame.draw.line(screen, (0, 0, 0), (a_city.display_x + offset_x + level_counter*(City.city_size/a_city.level), a_city.display_y + offset_y + City.city_size*0.85), (a_city.display_x + offset_x + level_counter*(City.city_size/a_city.level), a_city.display_y + offset_y + City.city_size*0.85 + 10), 2)
   def update(self, player_num):
     global selected_object, selected_object
     #this is the update function for the player
@@ -525,20 +430,20 @@ class Player:
           stolen_city.player_number = player_num
           Player.player_list[player_num].cities.append(stolen_city)
           #add city to player's list
-      elif [unit.coord_x, unit.coord_y] in villages:
+      elif [unit.coord_x, unit.coord_y] in VILLAGES:
         #if unit is on a village
         Player.player_list[player_num].cities.append(City(unit.coord_x, unit.coord_y, player_num))
         MAP[unit.coord_y][unit.coord_x].features.remove("village")
         print("village converted")
     #display stuff here
     #display buildings
-    display_buildings(self.buildings, offset_x, offset_y, player_num, self.color)
+    self.display_buildings()
     #display cities
-    display_cities(self.cities, offset_x, offset_y, player_num, self.color)
+    self.display_cities()
     #display units
     for unit in self.units:
       unit.action_range = [[unit.coord_x, unit.coord_y]]
-    display_units(self.units, offset_x, offset_y, player_num, self.color)
+    self.display_units()
     #update everything:
     #add the money per turn, resources per turn
   def owns_unit(self, unit):
@@ -601,7 +506,7 @@ class Player:
     #this takes place after turn, where units gain energy
     for unit in self.units:
       unit.turn_done = False
-      unit_reset(unit)
+      unit.unit_reset()
   def deduct_costs(self, amounts):
     #amounts is a list containing [money, wood, metal, food]
     #if deduct is True, subtract the resources, otherwise, add them
@@ -614,7 +519,7 @@ class Player:
 #player_count is the number of players
 player_count = 2
 for _ in range(player_count):
-  Player.player_list.append(Player(_ - 1))
+  Player.player_list.append(Player(_))
 #starts at 0, so the first player is player 0
 current_player = 0
 #Player.player_list[current_player] -> this is a Player class object
@@ -727,6 +632,11 @@ class Unit:
     self.action_range = [[self.coord_x, self.coord_y]]
     self.action_range_placeholder = deepcopy(self.action_range)
     #moverange is a list of all the adjacent hexes that the unit can be moved to
+  def unit_reset(self):
+    self.action = None
+    self.action_index = 0
+    self.action_sequence = []
+    self.action_range = [[self.coord_x, self.coord_y]]
   def next_action(self):
     global selected_object, selected_object
     try:
@@ -734,9 +644,19 @@ class Unit:
       self.action_index += 1
       selected_object = self
     except IndexError:
-      unit_reset(self)
+      self.unit_reset()
       self.turn_done = True
       print("turn done")
+  def calculate_damage(self, defender):
+    attack_damage = (self.health/self.max_health)*self.attack
+    defend_damage = (defender.health/defender.max_health)*defender.defense
+    #3 will affect the general damage of all attacks
+    #attack_damage *= 3
+    #no damage scaler
+    damage = attack_damage/defend_damage
+    if damage < 0:
+      damage = 0
+    return round(damage)
   def do_action(self, object):
     global btn_pressed_this_frame
     #calculate the ranges in display_hints, and actually do the action here
@@ -764,11 +684,11 @@ class Unit:
         btn_pressed_this_frame = True
         print("successful attack", type(object))
         #the attack is valid, so we move on to the next action
-        for animation in range(calculate_damage(self, object)):
+        for animation in range(self.calculate_damage(object)):
           animation_list.append(damageAnimation(object.display_x + Unit.unit_size/2 + offset_x - damageAnimation.img_size/2, object.display_y + Unit.unit_size/2 + offset_y - damageAnimation.img_size/2))
           print("animation created")
         #make the targeted_unit lose health
-        object.health -= calculate_damage(self, object)
+        object.health -= self.calculate_damage(object)
         self.next_action()
     elif self.action == "heal" and object == self:
       btn_pressed_this_frame = True
@@ -970,23 +890,6 @@ Player.player_list[0].units.append(Unit(steeler, 6, 7))
 Player.player_list[0].units.append(Unit(crossbowman, 1, 1))
 Player.player_list[0].units.append(Unit(swordsman, 0, 0))'''
 
-def display_buildings(buildings, offset_x, offset_y, p_number, p_color):
-  #p_number is the player number
-  #this displays a list of specific units (a unit type)
-  #units would be a list containing a specific unit type
-  for a_building in buildings:
-    shadeTile(a_building.coord_x, a_building.coord_y, p_color)
-    screen.blit(a_building.image, (a_building.display_x + offset_x, a_building.display_y + offset_y))
-    if a_building.production[0] > 0 or a_building.production[1] > 0 or a_building.production[2] > 0:
-      pygame.draw.rect(screen, (122, 122, 122), (a_building.display_x + offset_x, a_building.display_y + offset_y + Building.building_size*0.85, Building.building_size, 10))
-      pygame.draw.rect(screen, (255, 0, 255), (a_building.display_x + offset_x, a_building.display_y + offset_y + Building.building_size*0.85, Building.building_size*((a_building.production_timer + 1)/a_building.production_time), 10))
-      #the +1 is for UI ease
-      if a_building.production_timer + 1 == a_building.production_time:
-        pygame.draw.rect(screen, (0, 255, 0), (a_building.display_x + offset_x, a_building.display_y + offset_y + Building.building_size*0.85, Building.building_size, 10))
-      for level_counter in range(a_building.production_time + 1):
-        pygame.draw.line(screen, (0, 0, 0), (a_building.display_x + offset_x + level_counter*(Building.building_size/a_building.production_time), a_building.display_y + offset_y + Building.building_size*0.85), (a_building.display_x + offset_x + level_counter*(Building.building_size/a_building.production_time), a_building.display_y + offset_y + Building.building_size*0.85 + 10), 2)
-    text(25, str(p_number + 1), (255, 255, 255), a_building.display_x + offset_x + Building.building_size/2, a_building.display_y + offset_y + Building.building_size/2, alignx = "center", aligny = "center")
-
 class Building:
   #building constructor
   #buildings can only be built where a unit of the same player is
@@ -1041,7 +944,7 @@ class Building:
       for _ in range(self.production[1]):
         animation_list.append(resourceAnimation([0, 0, 1, 0], randint(round(self.display_x + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_x + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_y + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_y + offset_y + City.city_size/2 + resourceAnimation.animation_range/2)), SCREENLENGTH - 12.5, 122.5, 25, metal_resource_img))
       self.production_timer = 0
-      if "cultivate" in self.abilities and [self.coord_x, self.coord_y] in crop:
+      if "cultivate" in self.abilities and [self.coord_x, self.coord_y] in CROP:
         for _ in range(self.production[2]):
           animation_list.append(resourceAnimation([0, 0, 0, 1], randint(round(self.display_x + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_x + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_y + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_y + offset_y + City.city_size/2 + resourceAnimation.animation_range/2)), SCREENLENGTH - 12.5, 137.5, 25, food_resource_img))
         MAP[self.coord_y][self.coord_x].features.remove("crop")
@@ -1067,18 +970,6 @@ class Building:
 '''Player.player_list[0].available_upgraded_buildings.append(plantation)
 Player.player_list[0].buildings.append(Building(shipyard, 4, 5))
 Player.player_list[0].buildings.append(Building(mine, 2, 1))'''
-
-def display_cities(cities, offset_x, offset_y, p_number, p_color):
-  for a_city in cities:
-    shadeTile(a_city.coord_x, a_city.coord_y, p_color)
-    screen.blit(a_city.image, (a_city.display_x + offset_x, a_city.display_y + offset_y))
-    pygame.draw.rect(screen, (0, 255, 0), (a_city.display_x + offset_x, a_city.display_y + offset_y + City.city_size*0.85, City.city_size, 10))
-    pygame.draw.rect(screen, (0, 0, 255), (a_city.display_x + offset_x, a_city.display_y + offset_y + City.city_size*0.85, City.city_size*(a_city.spawn_timer/a_city.max_spawn_timer), 10))
-    if a_city.spawn_timer >= a_city.max_spawn_timer:
-      pygame.draw.rect(screen, (255, 0, 0), (a_city.display_x + offset_x, a_city.display_y + offset_y + City.city_size*0.85, City.city_size*(a_city.spawn_timer/a_city.max_spawn_timer), 10))
-    for level_counter in range(a_city.level + 1):
-      pygame.draw.line(screen, (0, 0, 0), (a_city.display_x + offset_x + level_counter*(City.city_size/a_city.level), a_city.display_y + offset_y + City.city_size*0.85), (a_city.display_x + offset_x + level_counter*(City.city_size/a_city.level), a_city.display_y + offset_y + City.city_size*0.85 + 10), 2)
-    text(25, str(p_number + 1), (255, 255, 255), a_city.display_x + offset_x + City.city_size/2, a_city.display_y + offset_y + City.city_size/2, alignx = "center", aligny = "center")
 
 class City:
   #building constructor
@@ -1627,7 +1518,7 @@ while True:
               new_unit = upgrade_to_naval(old_unit, Unit(unit_type[1], selected_object.coord_x, selected_object.coord_y))
               #replace old unit with new unit
               Player.player_list[current_player].units[Player.player_list[current_player].units.index(old_unit)] = new_unit
-              unit_reset(Player.player_list[current_player].units[Player.player_list[current_player].units.index(new_unit)])
+              Player.player_list[current_player].units[Player.player_list[current_player].units.index(new_unit)].unit_reset()
               Player.player_list[current_player].units[Player.player_list[current_player].units.index(new_unit)].turn_done = True
               del(old_unit)
               print("turn done")
@@ -1646,7 +1537,7 @@ while True:
               #add spawn_cooldown to city
               selected_object.spawn_timer += unit_type[1][8]
               Player.player_list[current_player].units.append(Unit(unit_type[1], selected_object.coord_x, selected_object.coord_y))
-              unit_reset(Player.player_list[current_player].units[-1])
+              Player.player_list[current_player].units[-1].unit_reset()
               Player.player_list[current_player].units[-1].turn_done = True
               print("turn done")
           else:
@@ -1851,7 +1742,7 @@ while True:
     if button(0, 0, 50, 50, 10):
       status = "playing"
     
-    text(25, str("Player " + str(current_player + 1)) + " turn", (0, 0, 0), SCREENLENGTH, 0, alignx = "right")
+    text(25, str("Player " + str(current_player + 1)) + " turn", Player.player_list[current_player].color, SCREENLENGTH, 0, alignx = "right")
     display_resources([Player.player_list[current_player].money, Player.player_list[current_player].wood, Player.player_list[current_player].metal, Player.player_list[current_player].food], SCREENLENGTH - 25, 50, display_all = True)
     
     for a_tech in all_techs:
