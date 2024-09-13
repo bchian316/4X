@@ -130,38 +130,35 @@ def get_vel(x1, y1, x2, y2, speed):
 hex_size = 100
 offset_x = 250
 offset_y = 100
+
+def coordConvert(coord_x, coord_y):
+  #this function returns display coordinates from game location coordinates
+  display_x = (coord_y - 1)*(-hex_size/4)*sqrt(3)
+  display_y = (coord_y - 1)*(hex_size*0.75)
+  display_x += (coord_x - 1)*(hex_size/2)*sqrt(3)
+  #allocate for image size (off of hex_side)
+  display_x += ((hex_size/2)*sqrt(3))/2
+  display_y += hex_size/2
+  return display_x, display_y
+
 class Location:
   plains_img = pygame.image.load("terrain/plains.png").convert_alpha()
   forest_img = pygame.image.load("terrain/forest.png").convert_alpha()
   water_img = pygame.image.load("terrain/water.png").convert_alpha()
   ocean_img = pygame.image.load("terrain/ocean.png").convert_alpha()
   mountain_img = pygame.image.load("terrain/mountain.png").convert_alpha()
+  img_dict = {"plains":plains_img, "forest":forest_img, "water":water_img, "ocean":ocean_img, "mountain":mountain_img}
   def __init__(self, coordx, coordy, terrain, features):
     self.terrain = terrain
-    self.find_img()
+    if self.terrain: #if terrain is not a void
+      self.img = Location.img_dict[self.terrain]
     self.features = features
     self.coord_x = coordx
     self.coord_y = coordy
-    self.display_x = (self.coord_y - 1)*(-hex_size/4)*sqrt(3)
-    self.display_y = (self.coord_y - 1)*(hex_size*0.75)
-    #for every x:
-    self.display_x += (self.coord_x - 1)*(hex_size/2)*sqrt(3)
-      #incorporate offsets
-
-  def find_img(self):
-    if self.terrain == "plains":
-      self.img = Location.plains_img
-    elif self.terrain == "forest":
-      self.img = Location.forest_img
-    elif self.terrain == "mountain":
-      self.img = Location.mountain_img
-    elif self.terrain == "water":
-      self.img = Location.water_img
-    elif self.terrain == "ocean":
-      self.img = Location.ocean_img
-    else:
-      #this is a void
-      pass
+    self.display_x, self.display_y = coordConvert(self.coord_x, self.coord_y)
+    #reverse the 2 lines that center the returned coords
+    self.display_y -= hex_size/2
+    self.display_x -= ((hex_size/2)*sqrt(3))/2
 
   def display(self, custom = None):
     if custom != None:
@@ -289,7 +286,6 @@ def return_Adjacent_hex(x, y):
   #adjacent_hexes has the coordinates of all the adjacent hexes, not their terrain stuff
   #u can call the terrain manually
 
-
 def shadeTile(coord_x, coord_y, color):
   #coord_x and coord_y are coordinates, not display coordinates
   global hex_size, offset_x, offset_y
@@ -389,7 +385,7 @@ class Player:
         pygame.draw.rect(screen, (255, 0, 0), (a_city.display_x + offset_x, a_city.display_y + offset_y + City.city_size*0.85, City.city_size*(a_city.spawn_timer/a_city.max_spawn_timer), 10))
       for level_counter in range(a_city.level + 1):
         pygame.draw.line(screen, (0, 0, 0), (a_city.display_x + offset_x + level_counter*(City.city_size/a_city.level), a_city.display_y + offset_y + City.city_size*0.85), (a_city.display_x + offset_x + level_counter*(City.city_size/a_city.level), a_city.display_y + offset_y + City.city_size*0.85 + 10), 2)
-  def update(self, player_num):
+  def update(self):
     global selected_object, selected_object
     #this is the update function for the player
     #kill buildings with bad guys on them
@@ -420,18 +416,18 @@ class Player:
     for unit in self.units:
       if return_occupied(unit.coord_x, unit.coord_y, object = "city"):
         #if there is a unit on the city
-        if not player_num == return_occupied(unit.coord_x, unit.coord_y, object = "city").player_number:
+        if not self.player_number == return_occupied(unit.coord_x, unit.coord_y, object = "city").player_number:
           #if unit's player doesn't own the city
           stolen_city = return_occupied(unit.coord_x, unit.coord_y, object = "city")
           #stolen_city is the city that the unit is on, will be a object of City
           Player.player_list[stolen_city.player_number].cities.remove(stolen_city)
           #remove city from previous player's list
-          stolen_city.player_number = player_num
-          Player.player_list[player_num].cities.append(stolen_city)
+          stolen_city.player_number = self.player_number
+          Player.player_list[self.player_number].cities.append(stolen_city)
           #add city to player's list
       elif [unit.coord_x, unit.coord_y] in VILLAGES:
         #if unit is on a village
-        Player.player_list[player_num].cities.append(City(unit.coord_x, unit.coord_y, player_num))
+        Player.player_list[self.player_number].cities.append(City(unit.coord_x, unit.coord_y, self.player_number))
         MAP[unit.coord_y][unit.coord_x].features.remove("village")
         print("village converted")
     #display stuff here
@@ -441,6 +437,7 @@ class Player:
     self.display_cities()
     #display units
     for unit in self.units:
+      #reset action ranges so they dont stack
       unit.action_range = [[unit.coord_x, unit.coord_y]]
     self.display_units()
     #update everything:
@@ -598,12 +595,7 @@ class Unit:
     self.coord_x = x
     self.coord_y = y
     #these are blit coords
-    self.display_x = (self.coord_y - 1)*(-hex_size/4)*sqrt(3)
-    self.display_y = (self.coord_y - 1)*(hex_size*0.75)
-    self.display_x += (self.coord_x - 1)*(hex_size/2)*sqrt(3)
-    #allocate for image size (off of hex_side)
-    self.display_x += ((hex_size/2)*sqrt(3))/2
-    self.display_y += hex_size/2
+    self.display_x, self.display_y = coordConvert(self.coord_x, self.coord_y)
     #allocate for image size (off of own image)
     self.display_x -= Unit.unit_size/2
     self.display_y -= Unit.unit_size/2
@@ -718,12 +710,7 @@ class Unit:
 
     #reset display coords (just in case)
     #these are blit coords
-    self.display_x = (self.coord_y - 1)*(-hex_size/4)*sqrt(3)
-    self.display_y = (self.coord_y - 1)*(hex_size*0.75)
-    self.display_x += (self.coord_x - 1)*(hex_size/2)*sqrt(3)
-    #allocate for image size (off of hex_side)
-    self.display_x += ((hex_size/2)*sqrt(3))/2
-    self.display_y += hex_size/2
+    self.display_x, self.display_y = coordConvert(self.coord_x, self.coord_y)
     #allocate for image size (off of own image)
     self.display_x -= Unit.unit_size/2
     self.display_y -= Unit.unit_size/2
@@ -804,13 +791,7 @@ class Unit:
           if return_occupied(movement_tile[0], movement_tile[1], object = "unit") and Player.player_list[current_player].owns_unit(return_occupied(movement_tile[0], movement_tile[1], object = "unit")):
             self.action_range.append(movement_tile)
     for hint in self.action_range:
-      hint_x = (hint[1] - 1)*(-hex_size/4)*sqrt(3)
-      hint_y = (hint[1] - 1)*(hex_size*0.75)
-      #for every x:
-      hint_x += (hint[0] - 1)*(hex_size/2)*sqrt(3)
-      #allocate for image size (off of hex_side)
-      hint_x += ((hex_size/2)*sqrt(3))/2
-      hint_y += hex_size/2
+      hint_x, hint_y = coordConvert(hint[0], hint[1])
       pygame.draw.circle(screen, (255, 255, 0), (hint_x + offset_x, hint_y + offset_y), 10)
 
   def display_stats(self, x, y, text_display_size = 20):
@@ -908,12 +889,7 @@ class Building:
     self.coord_x = x
     self.coord_y = y
     #these are blit coords
-    self.display_x = (self.coord_y - 1)*(-hex_size/4)*sqrt(3)
-    self.display_y = (self.coord_y - 1)*(hex_size*0.75)
-    self.display_x += (self.coord_x - 1)*(hex_size/2)*sqrt(3)
-    #allocate for image size (off of hex_side)
-    self.display_x += ((hex_size/2)*sqrt(3))/2
-    self.display_y += hex_size/2
+    self.display_x, self.display_y = coordConvert(self.coord_x, self.coord_y)
     #allocate for image size (off of own image)
     self.display_x -= Building.building_size/2
     self.display_y -= Building.building_size/2
@@ -984,12 +960,7 @@ class City:
     self.coord_x = x
     self.coord_y = y
     #these are blit coords
-    self.display_x = (self.coord_y - 1)*(-hex_size/4)*sqrt(3)
-    self.display_y = (self.coord_y - 1)*(hex_size*0.75)
-    self.display_x += (self.coord_x - 1)*(hex_size/2)*sqrt(3)
-    #allocate for image size (off of hex_side)
-    self.display_x += ((hex_size/2)*sqrt(3))/2
-    self.display_y += hex_size/2
+    self.display_x, self.display_y = coordConvert(self.coord_x, self.coord_y)
     #allocate for image size (off of own image)
     self.display_x -= City.city_size/2
     self.display_y -= City.city_size/2
@@ -1666,7 +1637,7 @@ while True:
                     selected_object = alternate_selection()
     for a_player in enumerate(Player.player_list):
       #this also resets each unit'saction_range, so keep this above the display_hints method
-      a_player[1].update(a_player[0])
+      a_player[1].update()
     #even though all player units are displayed, make it so only the units belonging to current_player are controlled
 
     if isinstance(selected_object, Unit) and selected_object.turn_done == False and selected_object.action_sequence != []:
