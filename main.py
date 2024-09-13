@@ -32,7 +32,7 @@ pygame.init()
 from math import sqrt, degrees, atan
 from copy import deepcopy
 from random import randint
-SCREENLENGTH = 700
+SCREENLENGTH = 900
 SCREENHEIGHT = 700
 FPS = 40
 num_displays = pygame.display.get_num_displays()
@@ -130,7 +130,6 @@ def get_vel(x1, y1, x2, y2, speed):
 hex_size = 100
 offset_x = 250
 offset_y = 100
-
 class Location:
   plains_img = pygame.image.load("terrain/plains.png").convert_alpha()
   forest_img = pygame.image.load("terrain/forest.png").convert_alpha()
@@ -1144,11 +1143,11 @@ logging = ["Logging", 5, 50, 500, None, None, None, None, "chop", None, logging_
 archery_img = pygame.image.load("tech/archery.png").convert_alpha()
 archery = ["Archery", 10, 100, 300, logging, archer, None, None, None, None, archery_img]
 engineering_img = pygame.image.load("tech/engineering.png").convert_alpha()
-engineering = ["Engineering", 20, 100, 100, archery, crossbowman, None, None, None, None, engineering_img]
+engineering = ["Engineering", 20, 0, 100, archery, crossbowman, None, None, None, None, engineering_img]
 forestry_img = pygame.image.load("tech/forestry.png").convert_alpha()
 forestry = ["Forestry", 10, 250, 300, logging, None, lumber_hut, None, None, None, forestry_img]
 reforestation_img = pygame.image.load("tech/reforestation.png").convert_alpha()
-reforestation = ["Reforestation", 20, 250, 100, forestry, None, None, None, "grow", None, reforestation_img]
+reforestation = ["Reforestation", 20, 250, 50, forestry, None, None, None, "grow", None, reforestation_img]
 medicine_img = pygame.image.load("tech/medicine.png").convert_alpha()
 medicine = ["Medicine", 20, 150, 100, forestry, medic, None, None, None, None, medicine_img]
 climbing_img = pygame.image.load("tech/climbing.png").convert_alpha()
@@ -1162,17 +1161,17 @@ armoring = ["Armoring", 25, 350, 150, smithery, shieldman, None, None, None, Non
 mining_img = pygame.image.load("tech/mining.png").convert_alpha()
 mining = ["Mining", 10, 475, 300, climbing, None, mine, None, None, None, mining_img]
 smelting_img = pygame.image.load("tech/smelting.png").convert_alpha()
-smelting = ["Smelting", 25, 550, 100, mining, None, None, foundry, None, None, smelting_img]
+smelting = ["Smelting", 25, 550, 50, mining, None, None, foundry, None, None, smelting_img]
 swimming_img = pygame.image.load("tech/swimming.png").convert_alpha()
 swimming = ["Swimming", 5, 500, 500, None, None, None, None, None, "water", swimming_img]
 sailing_img = pygame.image.load("tech/sailing.png").convert_alpha()
-sailing = ["Sailing", 10, 600, 300, swimming, None, shipyard, None, None, None, sailing_img]
+sailing = ["Sailing", 10, 550, 300, swimming, None, shipyard, None, None, None, sailing_img]
 trade_img = pygame.image.load("tech/trade.png").convert_alpha()
 trade = ["Trade", 10, 650, 300, swimming, None, market, None, None, None, trade_img]
 economics_img = pygame.image.load("tech/economics.png").convert_alpha()
-economics = ["Economics", 15, 650, 100, trade, None, None, port, None, None, economics_img]
+economics = ["Economics", 15, 650, 50, trade, None, None, port, None, None, economics_img]
 aquaculture_img = pygame.image.load("tech/aquaculture.png").convert_alpha()
-aquaculture = ["Aquaculture", 10, 600, 100, trade, None, None, None, "harvest", None, aquaculture_img]
+aquaculture = ["Aquaculture", 10, 600, 150, trade, None, None, None, "harvest", None, aquaculture_img]
 harvesting_img = pygame.image.load("tech/harvesting.png").convert_alpha()
 harvesting = ["Harvesting", 5, 800, 500, None, None, None, None, "cultivate", None, harvesting_img]
 riding_img = pygame.image.load("tech/riding.png").convert_alpha()
@@ -1259,22 +1258,22 @@ def receive_input(class_object):
   global mouse_clicked, MAP, map_length, selected_collision_range
   #can only receive input if user hasn't clicked on anything yet (btn_pressed_this_frame == False)
   if mouse_clicked and btn_pressed_this_frame == False:
-    if class_object == "unit":
+    if class_object == Unit:
       for player in Player.player_list:
           for unit in player.units:
             if circle_collided(mouse_pos[0], mouse_pos[1], 1, unit.display_x + Unit.unit_size/2 + offset_x, unit.display_y + Unit.unit_size/2 + offset_y, selected_collision_range/2):
               return unit
-    elif class_object == "building":
+    elif class_object == Building:
       for player in Player.player_list:
           for building in player.buildings:
             if circle_collided(mouse_pos[0], mouse_pos[1], 1, building.display_x + Building.building_size/2 + offset_x, Building.display_y + Building.building_size/2 + offset_y, selected_collision_range/2):
               return building
-    elif class_object == "city":
+    elif class_object == City:
       for player in Player.player_list:
           for city in player.cities:
             if circle_collided(mouse_pos[0], mouse_pos[1], 1, city.display_x + City.city_size/2 + offset_x, City.display_y + City.city_size/2 + offset_y, selected_collision_range/2):
               return city
-    elif class_object == "location":
+    elif class_object == Location:
       for row in enumerate(MAP):
         for tile in enumerate(row[1]):
           if circle_collided(mouse_pos[0], mouse_pos[1], 1, tile[1].display_x + offset_x + hex_size*sqrt(3)/4, tile[1].display_y + offset_y + hex_size/2, selected_collision_range/2):
@@ -1439,13 +1438,13 @@ while True:
       if selected_object.turn_done == False:
         try:
           if selected_object.action == "move":
-            selected_object.do_action(receive_input("location"))
+            selected_object.do_action(receive_input(Location))
           elif selected_object.action == "attack":
-            selected_object.do_action(receive_input("unit"))
+            selected_object.do_action(receive_input(Unit))
           elif selected_object.action == "heal":
-            selected_object.do_action(receive_input("unit"))
+            selected_object.do_action(receive_input(Unit))
           elif selected_object.action == "heal other":
-            selected_object.do_action(receive_input("unit"))
+            selected_object.do_action(receive_input(Unit))
         except:
           #player did not give input yet
           pass
