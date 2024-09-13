@@ -32,7 +32,7 @@ pygame.init()
 from math import sqrt, degrees, atan
 from copy import deepcopy
 from random import randint
-SCREENLENGTH = 900
+SCREENLENGTH = 1000
 SCREENHEIGHT = 700
 FPS = 40
 num_displays = pygame.display.get_num_displays()
