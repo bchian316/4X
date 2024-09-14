@@ -2,6 +2,8 @@ Based off of Polytopia, Epic Battle Simulator 2, Skulls of the Shogon, and Catac
 Destroy all opposing units and cities to win
 Capture cities by moving units onto them
 Kill enemy units by attacking them
+General tip: if a button is gray, it means you don't have enough money or resources
+if a button is red, then something else is wrong
 Units:
   Units are spawned from cities
   Units can perform actions off of their action sequences
@@ -10,7 +12,7 @@ Units:
   After the unit performs its sequence, it is immovable until the next turn
 Player:
   Players can perform actions on any location inhabited by a unit (grow, harvest, cultivate, chop)
-  Players can build buildings on any location inhabited by a unit
+  Players can build and upgrade buildings on any location inhabited by a unit
 Terrain:
   The map has a pre-set generated terrain of mountain, forest, water, ocean, and plains
   The map also has other stuff like villages (cities), crop, and seaweed
