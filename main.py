@@ -343,7 +343,6 @@ class Player:
     self.available_terrain = ["plains", "forest"]
   def display_units(self, availability_marker_size = 10):
     global current_player
-    #p_number is the player number
     #this displays a list of specific units (a unit type)
     #units would be a list containing a specific unit type
     for a_unit in self.units:
@@ -363,7 +362,6 @@ class Player:
         pygame.draw.circle(screen, (125, 125, 125), (a_unit.display_x + offset_x, a_unit.display_y + offset_y), availability_marker_size)
       text(30, str(self.player_number + 1), (0, 0, 0), a_unit.display_x + offset_x, a_unit.display_y + offset_y, alignx = "center", aligny = "center")
   def display_buildings(self):
-    #p_number is the player number
     #this displays a list of specific units (a unit type)
     #units would be a list containing a specific unit type
     for a_building in self.buildings:
@@ -515,19 +513,7 @@ class Player:
     self.wood -= amounts [1]
     self.metal -= amounts[2]
     self.food -= amounts[3]
-    
-#change player_count to alter the number of players
-#player_count is the number of players
-player_count = 2
-for _ in range(player_count):
-  Player.player_list.append(Player(_))
-#starts at 0, so the first player is player 0
-current_player = 0
-#Player.player_list[current_player] -> this is a Player class object
-#taking that.units is taking that player's units list
 
-Player.player_list[0].color = (0, 255, 255)
-Player.player_list[1].color = (255, 0, 0)
 #unit stats
 #var = ["name", health, regen, attack, defense, range, movement, cost (materials to make him) [money, wood, metal, food], timer, sequences, abilities]
 man = ["Man", 8, 3, 6, 2,  1, 2, [5, 1, 1, 1], 5, [["move", "attack"], ["heal"]], []]
@@ -545,6 +531,7 @@ crossbowman = ["Crossbowman", 5, 2, 15, 1, 3, 2, [25, 10, 5, 3], 7, [["move", "a
 medic = ["Medic", 10, 10, 0, 2, 1, 1, [10, 3, 1, 1], 4, [["move", "heal other"], ["move", "heal"]], []]
 rider = ["Rider", 9, 5, 7, 2, 1, 3, [10, 0, 0, 3], 6, [["move", "attack"], ["move", "heal"]], []]
 knight = ["Knight", 13, 6, 7, 1, 1, 3, [10, 0, 0, 3], 9, [["move", "attack"], ["attack", "move"], ["heal"]], []]
+elephant = ["Elephant", 18, 6, 15, 2, 1, 3, [20, 5, 3, 10], 14, [["move", "attack", "heal"]], []]
 ship = ["Ship", 10, 3, 0.5, 1, 0, 0, [15, 5, 0, 0], 0, [["move", "attack"], ["move", "heal", "move"]], ["float"]]
 steeler = ["Steeler", 30, 8, 1.5, 1.5, 0, -1, [20, 0, 3, 0], 0, [["move", "attack", "move"], ["heal"]], ["float"]]
 
@@ -559,7 +546,19 @@ port = ["Port", [30, 3, 3, 3], [20, 20, 20], 3, [], ["shipbuilding"], None]
 market = ["Market", [20, 1, 1, 1], [3, 3, 3], 2, ["water"], [], port]
 plantation = ["Plantation", [30, 5, 0, 0], [0, 0, 20], 1, None, ["cultivate"], None]
 farm = ["Farm", [15, 0, 0, 3], [0, 0, 10], 1, ["plains", "forest", "mountain", "water"], ["cultivate"], plantation]
+    
+#change player_count to alter the number of players
+#player_count is the number of players
+player_count = 2
+for _ in range(player_count):
+  Player.player_list.append(Player(_))
+#starts at 0, so the first player is player 0
+current_player = 0
+#Player.player_list[current_player] -> this is a Player class object
+#taking that.units is taking that player's units list
 
+Player.player_list[0].color = (0, 255, 255)
+Player.player_list[1].color = (255, 0, 0)
 #make it so all players can make units
 for _ in Player.player_list:
   _.available_units.append(man)
@@ -584,6 +583,7 @@ class Unit:
   man_img = pygame.image.load("unit/man.png").convert_alpha()
   rider_img = pygame.image.load("unit/rider.png").convert_alpha()
   knight_img = pygame.image.load("unit/knight.png").convert_alpha()
+  elephant_img = pygame.image.load("unit/elephant.png").convert_alpha()
   swordsman_img = pygame.image.load("unit/swordsman.png").convert_alpha()
   spearman_img = pygame.image.load("unit/spearman.png").convert_alpha()
   axeman_img = pygame.image.load("unit/axeman.png").convert_alpha()
@@ -594,7 +594,7 @@ class Unit:
   ship_img = pygame.image.load("unit/ship.png").convert_alpha()
   steeler_img = pygame.image.load("unit/steeler.png").convert_alpha()
   unit_max_stack = 3
-  img_dict = {"Man":man_img, "Rider":rider_img, "Knight":knight_img, "Swordsman":swordsman_img, "Spearman":spearman_img, "Axeman":axeman_img, "Shieldman":shieldman_img, "Archer":archer_img, "Crossbowman":crossbowman_img, "Medic":medic_img, "Ship":ship_img, "Steeler":steeler_img}
+  img_dict = {"Man":man_img, "Rider":rider_img, "Knight":knight_img, "Elephant":elephant_img, "Swordsman":swordsman_img, "Spearman":spearman_img, "Axeman":axeman_img, "Shieldman":shieldman_img, "Archer":archer_img, "Crossbowman":crossbowman_img, "Medic":medic_img, "Ship":ship_img, "Steeler":steeler_img}
   def __init__(self, stats, x, y):
     #these are hex positions, not blit coords
     self.coord_x = x
@@ -1154,13 +1154,15 @@ riding_img = pygame.image.load("tech/riding.png").convert_alpha()
 riding = ["Riding", 12, 850, 300, cultivation, rider, None, None, None, None, riding_img]
 honor_img = pygame.image.load("tech/honor.png").convert_alpha()
 honor = ["Honor", 12, 950, 100, riding, knight, None, None, None, None, honor_img]
+taming_img = pygame.image.load("tech/taming.png").convert_alpha()
+taming = ["Taming", 30, 850, 0, riding, elephant, None, None, None, None, taming_img]
 farming_img = pygame.image.load("tech/farming.png").convert_alpha()
 farming = ["Farming", 10, 750, 300, cultivation, None, farm, None, None, None, farming_img]
 agriculture_img = pygame.image.load("tech/agriculture.png").convert_alpha()
 agriculture = ["Agriculture", 25, 750, 50, farming, None, None, plantation, None, None, agriculture_img]
 fertilization_img = pygame.image.load("tech/fertilization.png").convert_alpha()
 fertilization = ["Fertilization", 20, 825, 150, farming, None, None, None, "fertilize", None, fertilization_img]
-all_techs = [logging, archery, engineering, forestry, reforestation, medicine, climbing, smithery, sharpening, armoring, mining, smelting, swimming, sailing, trade, economics, aquaculture, cultivation, riding, honor, farming, agriculture, fertilization]
+all_techs = [logging, archery, engineering, forestry, reforestation, medicine, climbing, smithery, sharpening, armoring, mining, smelting, swimming, sailing, trade, economics, aquaculture, cultivation, riding, honor, taming, farming, agriculture, fertilization]
 
 animating = False
 animation_list = []
