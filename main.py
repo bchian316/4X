@@ -148,6 +148,11 @@ class Location:
   ocean_img = pygame.image.load("terrain/ocean.png").convert_alpha()
   mountain_img = pygame.image.load("terrain/mountain.png").convert_alpha()
   img_dict = {"plains":plains_img, "forest":forest_img, "water":water_img, "ocean":ocean_img, "mountain":mountain_img}
+  crop_img = pygame.image.load("terrain/crop.png").convert_alpha()
+  harvested_crop_img = pygame.image.load("terrain/harvested crop.png").convert_alpha()
+  seaweed_img = pygame.image.load("terrain/seaweed.png").convert_alpha()
+  ore_img = pygame.image.load("terrain/ore.png").convert_alpha()
+  village_img = pygame.image.load("terrain/village.png").convert_alpha()
   def __init__(self, coordx, coordy, terrain, features):
     self.terrain = terrain
     if self.terrain: #if terrain is not a void
@@ -170,13 +175,15 @@ class Location:
     except:
       pass
     if "crop" in self.features:
-      screen.blit(crop_img, coords)
+      screen.blit(Location.crop_img, coords)
     elif "harvested crop" in self.features:
-      screen.blit(harvested_crop_img, coords)
+      screen.blit(Location.harvested_crop_img, coords)
     if "seaweed" in self.features:
-      screen.blit(seaweed_img, coords)
+      screen.blit(Location.seaweed_img, coords)
+    if "ore" in self.features:
+      screen.blit(Location.ore_img, coords)
     if "village" in self.features:
-      screen.blit(village_img, coords)
+      screen.blit(Location.village_img, coords)
 
 #lets make the map a constant size (4 side length: hexagon) = 37 tiles
 #lets make 9 diagonal columns because there are 2x-1 columns when x is side length
@@ -193,11 +200,12 @@ TERRAIN = [["plains", "plains", "mountain", "plains", "forest", "", "", "", ""],
        ["", "", "", "water", "water", "water", "water", "water", "water"], 
        ["", "", "", "", "ocean", "ocean", "ocean", "ocean", "ocean"]]
 #this is the side length of the map
-map_length = len(TERRAIN)-1
+MAP_LENGTH = len(TERRAIN)-1
 #useless for now
 CROP = [[5, 1], [5, 2], [6, 2], [3, 3]]
 HARVESTED_CROP = []
 SEAWEED = [[6, 7], [7, 7], [8, 7], [6, 8], [7, 8]]
+ORE = [[2, 3], [3, 5], [5, 6], [4, 3], [6, 4], [7, 4]]
 VILLAGES = [[0, 2], [1, 0], [2, 4], [5, 1], [5, 7], [6, 6], [3, 7]]
 MAP = []
 #configure map
@@ -213,6 +221,8 @@ for row in enumerate(TERRAIN):
       features.append("harvested crop")
     if [coordx, coordy] in SEAWEED:
       features.append("seaweed")
+    if [coordx, coordy] in ORE:
+      features.append("ore")
     if [coordx, coordy] in VILLAGES:
       features.append("village")
     MAP[coordy].append(Location(coordx, coordy, tile[1], features))
@@ -245,16 +255,13 @@ location_img = pygame.image.load("selection/foreign location.png").convert_alpha
 chop_img = pygame.image.load("player actions/chop.png").convert_alpha()
 cultivate_img = pygame.image.load("player actions/cultivate.png").convert_alpha()
 harvest_img = pygame.image.load("player actions/harvest.png").convert_alpha()
+extract_img = pygame.image.load("player actions/extract.png").convert_alpha()
 grow_img = pygame.image.load("player actions/grow.png").convert_alpha()
 fertilize_img = pygame.image.load("player actions/fertilize.png").convert_alpha()
 #icon imgs for unit stats
 #defense_img = pygame.image.load("defense.png").convert_alpha()
 
 #map features (food, seaweed, etc)
-crop_img = pygame.image.load("terrain/crop.png").convert_alpha()
-harvested_crop_img = pygame.image.load("terrain/harvested crop.png").convert_alpha()
-seaweed_img = pygame.image.load("terrain/seaweed.png").convert_alpha()
-village_img = pygame.image.load("terrain/village.png").convert_alpha()
 def display_map_hex(map):
   #use offsets to move the entire map around
   for row in map:
@@ -317,6 +324,7 @@ class Player:
   chop_cost = 5
   cultivate_cost = 10
   harvest_cost = 0
+  extract_cost = 5
   grow_cost = 15
   fertilize_cost = 20
   def __init__(self, player_number):
@@ -438,7 +446,7 @@ class Player:
     self.display_cities()
     #display units
     for unit in self.units:
-      #reset action ranges so they dont stack
+      #reset action ranges so they dont stack (happens every frame)
       unit.action_range = [[unit.coord_x, unit.coord_y]]
     self.display_units()
     #update everything:
@@ -473,6 +481,9 @@ class Player:
     elif action == "harvest":
       self.money += 10
       selected_object.features.remove("seaweed")
+    elif action == "extract":
+      self.money += 20
+      selected_object.features.remove("ore")
     elif action == "grow":
       #grow forest from plains
       selected_object.terrain = "forest"
@@ -494,9 +505,7 @@ class Player:
       city.produce()
       if return_occupied(city.coord_x, city.coord_y, "unit") == False:
         #cities cannot cooldown if there's a person on it
-        city.spawn_timer -= City.spawn_cooldown*city.max_spawn_timer
-        if city.spawn_timer < 0:
-          city.spawn_timer = 0
+        city.spawn_timer = 0
     
     #reset variables so u can't control dudes that belong to other players
     selected_object = None
@@ -515,37 +524,37 @@ class Player:
     self.food -= amounts[3]
 
 #unit stats
-#var = ["name", health, regen, attack, defense, range, movement, cost (materials to make him) [money, wood, metal, food], timer, sequences, abilities]
-man = ["Man", 8, 3, 6, 2,  1, 2, [5, 1, 1, 1], 5, [["move", "attack"], ["heal"]], []]
+#var = ["name", health, regen, attack, defense, range, movement, cost [money, wood, metal, food], timer, sequences, abilities]
+man = ["Man", 8, 3, 6, 2,  1, 2, [5, 1, 1, 1], 10, [["move", "attack"], ["heal"]], []]
 #man can move 1 or attack
-swordsman = ["Swordsman", 12, 4, 9, 3, 1, 2, [10, 2, 5, 2], 5, [["move", "attack"], ["heal"]], []]
-spearman = ["Spearman", 10, 3, 8, 2, 2, 2, [5, 5, 3, 2], 5, [["move", "attack", "attack"], ["heal"]], []]
-axeman = ["Axeman", 12, 4, 20, 3, 1, 1, [5, 2, 5, 1], 5, [["move"], ["attack"], ["heal"]], []]
-shieldman = ["Shieldman", 15, 5, 6, 4, 1, 1, [5, 0, 10, 0], 5, [["move"], ["attack"], ["heal"]], []]
+swordsman = ["Swordsman", 12, 4, 9, 3, 1, 2, [10, 3, 5, 2], 15, [["move", "attack"], ["heal"]], []]
+spearman = ["Spearman", 10, 3, 8, 2, 2, 2, [5, 3, 4, 2], 12, [["move", "attack", "attack"], ["heal"]], []]
+axeman = ["Axeman", 12, 4, 20, 3, 1, 1, [5, 2, 5, 1], 13, [["move"], ["attack"], ["heal"]], []]
+shieldman = ["Shieldman", 15, 5, 6, 4, 1, 1, [5, 3, 10, 1], 10, [["move"], ["attack"], ["heal"]], []]
 #scout = ["Scout", Player.player_list[current_player].scouts, 3, 1, 5, 3, 1, 3, [3, 1, 0, 0], 3, [["move", "attack", "move"]], []]
 #scout can move 3, attack 3, and move 3
 #catapult = ["Catapult", Player.player_list[current_player].units, 5, 0, 10, 3, 3, 1, [3, 3, 0, 0], 8, [["move"], ["attack"]], []]
 #catapult can move 1 or attack 1
-archer = ["Archer", 8, 4, 7, 1, 2, 2, [5, 3, 0, 0], 7, [["attack", "move"], ["move", "heal"]], []]
-crossbowman = ["Crossbowman", 5, 2, 15, 1, 3, 2, [25, 10, 5, 3], 7, [["move", "attack"], ["attack", "move"], ["heal"]], []]
-medic = ["Medic", 10, 10, 0, 2, 1, 1, [10, 3, 1, 1], 4, [["move", "heal other"], ["move", "heal"]], []]
-rider = ["Rider", 9, 5, 7, 2, 1, 3, [10, 0, 0, 3], 6, [["move", "attack"], ["move", "heal"]], []]
-knight = ["Knight", 13, 6, 7, 1, 1, 3, [10, 0, 0, 3], 9, [["move", "attack"], ["attack", "move"], ["heal"]], []]
-elephant = ["Elephant", 18, 6, 15, 2, 1, 3, [20, 5, 3, 10], 14, [["move", "attack", "heal"]], []]
-ship = ["Ship", 10, 3, 0.5, 1, 0, 0, [15, 5, 0, 0], 0, [["move", "attack"], ["move", "heal", "move"]], ["float"]]
-steeler = ["Steeler", 30, 8, 1.5, 1.5, 0, -1, [20, 0, 3, 0], 0, [["move", "attack", "move"], ["heal"]], ["float"]]
+archer = ["Archer", 8, 4, 7, 1, 2, 2, [5, 3, 1, 1], 14, [["attack", "move"], ["move", "heal"]], []]
+crossbowman = ["Crossbowman", 5, 2, 15, 1, 3, 2, [25, 10, 5, 3], 17, [["move", "attack"], ["attack", "move"], ["heal"]], []]
+medic = ["Medic", 10, 10, 0, 2, 1, 1, [10, 3, 1, 2], 8, [["move", "heal other"], ["move", "heal"]], []]
+rider = ["Rider", 9, 5, 7, 2, 1, 3, [10, 2, 1, 3], 12, [["move", "attack"], ["move", "heal"]], []]
+knight = ["Knight", 13, 6, 7, 1, 1, 3, [10, 2, 4, 6], 18, [["move", "attack"], ["attack", "move"], ["heal"]], []]
+elephant = ["Elephant", 18, 6, 15, 2, 1, 3, [20, 5, 3, 10], 30, [["move", "attack", "heal"]], []]
+ship = ["Ship", 10, 3, 1, 1, 0, 0, [15, 2, 2, 2], 0, [["move", "attack"], ["move", "heal", "move"]], ["float"]]
+steeler = ["Steeler", 20, 5, 1.5, 1.5, 0, 0, [20, 2, 8, 3], 0, [["move", "attack", "move"], ["heal"]], ["float"]]
 
 #building stats
 #var = ["name", list, cost, production, production speed, possible terrain, abilities, upgrade into]
-lumber_hut = ["Lumber Hut", [10, 2, 0, 0], [3, 0, 0], 1, ["forest"], [], None]
-foundry = ["Foundry", [20, 0, 5, 0], [0, 20, 0], 2, None, [], None]
+lumber_hut = ["Lumber Hut", [10, 5, 3, 3], [3, 0, 0], 1, ["forest"], [], None]
+foundry = ["Foundry", [20, 4, 9, 6], [0, 20, 0], 2, None, [], None]
 #foundry is upgradable, so there's no terrain restrictions: u just build it on top of a mine
-mine = ["Mine", [20, 0, 2, 0], [0, 5, 0], 2, ["mountain"], [], foundry]
-shipyard = ["Shipyard", [25, 3, 0, 0], [0, 0, 0], 1, ["water"], ["shipbuilding"], None]
-port = ["Port", [30, 3, 3, 3], [20, 20, 20], 3, [], ["shipbuilding"], None]
-market = ["Market", [20, 1, 1, 1], [3, 3, 3], 2, ["water"], [], port]
-plantation = ["Plantation", [30, 5, 0, 0], [0, 0, 20], 1, None, ["cultivate"], None]
-farm = ["Farm", [15, 0, 0, 3], [0, 0, 10], 1, ["plains", "forest", "mountain", "water"], ["cultivate"], plantation]
+mine = ["Mine", [20, 5, 5, 2], [0, 5, 0], 2, ["mountain"], [], foundry]
+shipyard = ["Shipyard", [25, 4, 3, 5], [0, 0, 0], 1, ["water"], ["shipbuilding"], None]
+port = ["Port", [30, 3, 3, 6], [20, 20, 20], 3, [], ["shipbuilding"], None]
+market = ["Market", [20, 8, 7, 6], [3, 3, 3], 2, ["water"], [], port]
+plantation = ["Plantation", [30, 8, 4, 6], [0, 0, 20], 1, None, ["cultivate"], None]
+farm = ["Farm", [15, 0, 1, 9], [0, 0, 10], 1, ["plains", "forest", "mountain", "water"], ["cultivate"], plantation]
     
 #change player_count to alter the number of players
 #player_count is the number of players
@@ -747,7 +756,7 @@ class Unit:
         for movement_tile in self.action_range_placeholder:
           if return_occupied(movement_tile[0], movement_tile[1], object = "unit") == False or Player.player_list[current_player].owns_unit(return_occupied(movement_tile[0], movement_tile[1], object = "unit")):
           #if empty spot or player owns dude that is there
-            if movement_tile[0] >= 0 and movement_tile[0] <= map_length and movement_tile[1] >= 0 and movement_tile[1] <= map_length:
+            if movement_tile[0] >= 0 and movement_tile[0] <= MAP_LENGTH and movement_tile[1] >= 0 and movement_tile[1] <= MAP_LENGTH:
               #if inside the map
               if MAP[movement_tile[1]][movement_tile[0]].terrain in Player.player_list[current_player].available_terrain:
                 #in good terrain?
@@ -759,7 +768,7 @@ class Unit:
       for movement_tile in self.action_range_placeholder:
         if movement_tile not in self.action_range and return_occupied(movement_tile[0], movement_tile[1], object = "unit") == False:
           #remove duplicates and places occupied by other ppl
-          if movement_tile[0] >= 0 and movement_tile[0] <= map_length and movement_tile[1] >= 0 and movement_tile[1] <= map_length:
+          if movement_tile[0] >= 0 and movement_tile[0] <= MAP_LENGTH and movement_tile[1] >= 0 and movement_tile[1] <= MAP_LENGTH:
             #if inside the map
             if MAP[movement_tile[1]][movement_tile[0]].terrain in Player.player_list[current_player].available_terrain:
               #remove places that are bad terrain
@@ -859,8 +868,9 @@ def display_action_sequence(action_sequence, action_index, x, y, mini = False):
 
 def upgrade_to_naval(old_unit, new_unit):
   #old and new unit should be unit objects
-  new_unit.attack *= old_unit.attack
-  new_unit.defense *= old_unit.defense
+  #health and regen rates don't change
+  new_unit.attack = round(new_unit.attack * old_unit.attack)
+  new_unit.defense = round(new_unit.defense * old_unit.defense)
   new_unit.movement += old_unit.movement
   new_unit.range += old_unit.range
   return new_unit
@@ -957,8 +967,6 @@ class City:
   #buildings are destroyed when other player units move on top of it
   city_size = 75
   max_level = 5
-  #this means reduce the cooldown timer by 25% every end_turn
-  spawn_cooldown = 0.25
   cooldown_img = pygame.image.load("stats/timer.png").convert_alpha()
   upgrade_img = pygame.image.load("city/upgrade.png")
   def __init__(self, x, y, player_number = None, level = 1):
@@ -1006,6 +1014,7 @@ class City:
     screen.blit(City.cooldown_img, (x + 75, y + 37.5))
     text(text_display_size, str(self.spawn_timer) + "/" + str(self.max_spawn_timer), (0, 255, 0), x + 100, y + 37.5)
     if self.spawn_timer >= self.max_spawn_timer:
+      #spawn timer is full and can't make any more units (draw on top of green letters)
       text(text_display_size, str(self.spawn_timer) + "/" + str(self.max_spawn_timer), (255, 0, 0), x + 100, y + 37.5)
     
 
@@ -1138,6 +1147,8 @@ mining_img = pygame.image.load("tech/mining.png").convert_alpha()
 mining = ["Mining", 10, 475, 300, climbing, None, mine, None, None, None, mining_img]
 smelting_img = pygame.image.load("tech/smelting.png").convert_alpha()
 smelting = ["Smelting", 25, 550, 50, mining, None, None, foundry, None, None, smelting_img]
+extraction_img = pygame.image.load("tech/extraction.png").convert_alpha()
+extraction = ["Extraction", 15, 475, 25, mining, None, None, None, "extract", None, extraction_img]
 swimming_img = pygame.image.load("tech/swimming.png").convert_alpha()
 swimming = ["Swimming", 5, 500, 500, None, None, None, None, None, "water", swimming_img]
 sailing_img = pygame.image.load("tech/sailing.png").convert_alpha()
@@ -1162,7 +1173,7 @@ agriculture_img = pygame.image.load("tech/agriculture.png").convert_alpha()
 agriculture = ["Agriculture", 25, 750, 50, farming, None, None, plantation, None, None, agriculture_img]
 fertilization_img = pygame.image.load("tech/fertilization.png").convert_alpha()
 fertilization = ["Fertilization", 20, 825, 150, farming, None, None, None, "fertilize", None, fertilization_img]
-all_techs = [logging, archery, engineering, forestry, reforestation, medicine, climbing, smithery, sharpening, armoring, mining, smelting, swimming, sailing, trade, economics, aquaculture, cultivation, riding, honor, taming, farming, agriculture, fertilization]
+all_techs = [logging, archery, engineering, forestry, reforestation, medicine, climbing, smithery, sharpening, armoring, mining, smelting, extraction, swimming, sailing, trade, economics, aquaculture, cultivation, riding, honor, taming, farming, agriculture, fertilization]
 
 animating = False
 animation_list = []
@@ -1235,7 +1246,7 @@ def destroyAnimation():
 
 def receive_input(class_object):
   #run through all objects that can be clicked on
-  global mouse_clicked, MAP, map_length, selected_collision_range
+  global mouse_clicked, MAP, MAP_LENGTH, selected_collision_range
   #can only receive input if user hasn't clicked on anything yet (btn_pressed_this_frame == False)
   if mouse_clicked and btn_pressed_this_frame == False:
     if class_object == Unit:
@@ -1257,7 +1268,7 @@ def receive_input(class_object):
       for row in enumerate(MAP):
         for tile in enumerate(row[1]):
           if circle_collided(mouse_pos[0], mouse_pos[1], 1, tile[1].display_x + offset_x + hex_size*sqrt(3)/4, tile[1].display_y + offset_y + hex_size/2, selected_collision_range/2):
-            if tile[0] >= 0 and tile[0] <= map_length and row[0] >= 0 and row[0] <= map_length:
+            if tile[0] >= 0 and tile[0] <= MAP_LENGTH and row[0] >= 0 and row[0] <= MAP_LENGTH:
               if tile[1].terrain != "":
                 return tile[1]
   return None
@@ -1593,6 +1604,16 @@ while True:
             screen.blit(harvest_img, (player_action_x + player_action[0] * player_action_size, player_action_y))
             text(25, "Harvest", (0, 0, 0), (player_action_x + player_action_size/2) + (player_action[0] * player_action_size), player_action_y - 10, alignx = "center")
             text(50, str(Player.harvest_cost), money_color, (player_action_x + player_action_size/2) + (player_action[0] * player_action_size), player_action_y + 25, alignx = "center")
+          elif player_action[1] == "extract":
+            if "ore" in selected_object.features:
+              if button(player_action_x + player_action[0] * player_action_size, player_action_y, player_action_size, player_action_size, 20):
+                #ore costs stuff, but gives you more in return
+                Player.player_list[current_player].player_action("extract")
+            else:
+              pygame.draw.rect(screen, (255, 0, 0), (player_action_x + player_action[0] * player_action_size, player_action_y, player_action_size, player_action_size), 0, 20)
+            screen.blit(extract_img, (player_action_x + player_action[0] * player_action_size, player_action_y))
+            text(25, "Extract", (0, 0, 0), (player_action_x + player_action_size/2) + (player_action[0] * player_action_size), player_action_y - 10, alignx = "center")
+            text(50, str(Player.extract_cost), money_color, (player_action_x + player_action_size/2) + (player_action[0] * player_action_size), player_action_y + 25, alignx = "center")
           elif player_action[1] == "grow":
             if selected_object.terrain == "plains":
               if button(player_action_x + player_action[0] * player_action_size, player_action_y, player_action_size, player_action_size, 20, available = bool(Player.player_list[current_player].money >= Player.grow_cost)):
@@ -1654,7 +1675,7 @@ while True:
         for row in enumerate(MAP):
           for tile in enumerate(row[1]):
             if circle_collided(mouse_pos[0], mouse_pos[1], 1, tile[1].display_x + offset_x + hex_size*sqrt(3)/4, tile[1].display_y + offset_y + hex_size/2, selected_collision_range/2):
-              if tile[0] >= 0 and tile[0] <= map_length and row[0] >= 0 and row[0] <= map_length:
+              if tile[0] >= 0 and tile[0] <= MAP_LENGTH and row[0] >= 0 and row[0] <= MAP_LENGTH:
                 if MAP[tile[0]][row[0]].terrain != "":
                   if not same_space((tile[1].coord_x, tile[1].coord_y)):
                     btn_pressed_this_frame = True
