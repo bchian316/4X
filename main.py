@@ -238,8 +238,8 @@ player_action_y = SCREENHEIGHT - 100
 player_action_size = 75
 #when options are listed, start at this x value
 option_x = 425
-selection_frame = pygame.image.load("selection frame.png").convert_alpha()
-production_frame = pygame.image.load("production frame.png").convert_alpha()
+selection_frame = pygame.image.load("frames/selection frame.png").convert_alpha()
+production_frame = pygame.image.load("frames/production frame.png").convert_alpha()
 #reset selected_unit after player turn is done to prevent other players from controlling a unit that's not theirs
 #terrain images
 #selected images
@@ -523,63 +523,6 @@ class Player:
     self.metal -= amounts[2]
     self.food -= amounts[3]
 
-#unit stats
-#var = ["name", health, regen, attack, defense, range, movement, cost [money, wood, metal, food], timer, sequences, abilities]
-man = ["Man", 8, 3, 6, 2,  1, 2, [5, 1, 1, 1], 10, [["move", "attack"], ["heal"]], []]
-#man can move 1 or attack
-swordsman = ["Swordsman", 12, 4, 9, 3, 1, 2, [10, 3, 5, 2], 15, [["move", "attack"], ["heal"]], []]
-spearman = ["Spearman", 10, 3, 8, 2, 2, 2, [5, 3, 4, 2], 12, [["move", "attack", "attack"], ["heal"]], []]
-axeman = ["Axeman", 12, 4, 20, 3, 1, 1, [5, 2, 5, 1], 13, [["move"], ["attack"], ["heal"]], []]
-shieldman = ["Shieldman", 15, 5, 6, 4, 1, 1, [5, 3, 10, 1], 10, [["move"], ["attack"], ["heal"]], []]
-#scout = ["Scout", Player.player_list[current_player].scouts, 3, 1, 5, 3, 1, 3, [3, 1, 0, 0], 3, [["move", "attack", "move"]], []]
-#scout can move 3, attack 3, and move 3
-#catapult = ["Catapult", Player.player_list[current_player].units, 5, 0, 10, 3, 3, 1, [3, 3, 0, 0], 8, [["move"], ["attack"]], []]
-#catapult can move 1 or attack 1
-archer = ["Archer", 8, 4, 7, 1, 2, 2, [5, 3, 1, 1], 14, [["attack", "move"], ["move", "heal"]], []]
-crossbowman = ["Crossbowman", 5, 2, 15, 1, 3, 2, [25, 10, 5, 3], 17, [["move", "attack"], ["attack", "move"], ["heal"]], []]
-medic = ["Medic", 10, 10, 0, 2, 1, 1, [10, 3, 1, 2], 8, [["move", "heal other"], ["move", "heal"]], []]
-rider = ["Rider", 9, 5, 7, 2, 1, 3, [10, 2, 1, 3], 12, [["move", "attack"], ["move", "heal"]], []]
-knight = ["Knight", 13, 6, 7, 1, 1, 3, [10, 2, 4, 6], 18, [["move", "attack"], ["attack", "move"], ["heal"]], []]
-elephant = ["Elephant", 18, 6, 15, 2, 1, 3, [20, 5, 3, 10], 30, [["move", "attack", "heal"]], []]
-ship = ["Ship", 10, 3, 1, 1, 0, 0, [15, 2, 2, 2], 0, [["move", "attack"], ["move", "heal", "move"]], ["float"]]
-steeler = ["Steeler", 20, 5, 1.5, 1.5, 0, 0, [20, 2, 8, 3], 0, [["move", "attack", "move"], ["heal"]], ["float"]]
-
-#building stats
-#var = ["name", list, cost, production, production speed, possible terrain, abilities, upgrade into]
-lumber_hut = ["Lumber Hut", [10, 5, 3, 3], [3, 0, 0], 1, ["forest"], [], None]
-foundry = ["Foundry", [20, 4, 9, 6], [0, 20, 0], 2, None, [], None]
-#foundry is upgradable, so there's no terrain restrictions: u just build it on top of a mine
-mine = ["Mine", [20, 5, 5, 2], [0, 5, 0], 2, ["mountain"], [], foundry]
-shipyard = ["Shipyard", [25, 4, 3, 5], [0, 0, 0], 1, ["water"], ["shipbuilding"], None]
-port = ["Port", [30, 3, 3, 6], [20, 20, 20], 3, [], ["shipbuilding"], None]
-market = ["Market", [20, 8, 7, 6], [3, 3, 3], 2, ["water"], [], port]
-plantation = ["Plantation", [30, 8, 4, 6], [0, 0, 20], 1, None, ["cultivate"], None]
-farm = ["Farm", [15, 0, 1, 9], [0, 0, 10], 1, ["plains", "forest", "mountain", "water"], ["cultivate"], plantation]
-    
-#change player_count to alter the number of players
-#player_count is the number of players
-player_count = 2
-for _ in range(player_count):
-  Player.player_list.append(Player(_))
-#starts at 0, so the first player is player 0
-current_player = 0
-#Player.player_list[current_player] -> this is a Player class object
-#taking that.units is taking that player's units list
-
-Player.player_list[0].color = (0, 255, 255)
-Player.player_list[1].color = (255, 0, 0)
-#make it so all players can make units
-for _ in Player.player_list:
-  _.available_units.append(man)
-  _.available_naval_units.append(ship)
-
-'''Player.player_list[0].available_actions.append("chop")
-Player.player_list[0].available_actions.append("cultivate")
-Player.player_list[0].available_actions.append("harvest")
-Player.player_list[0].available_actions.append("grow")'''
-
-
-#def return_hex_details(x, y)
 
 class Unit:
   #unit constructor
@@ -604,7 +547,7 @@ class Unit:
   steeler_img = pygame.image.load("unit/steeler.png").convert_alpha()
   unit_max_stack = 3
   img_dict = {"Man":man_img, "Rider":rider_img, "Knight":knight_img, "Elephant":elephant_img, "Swordsman":swordsman_img, "Spearman":spearman_img, "Axeman":axeman_img, "Shieldman":shieldman_img, "Archer":archer_img, "Crossbowman":crossbowman_img, "Medic":medic_img, "Ship":ship_img, "Steeler":steeler_img}
-  def __init__(self, stats, x, y):
+  def __init__(self, stats, x, y, current_health = 0):
     #these are hex positions, not blit coords
     self.coord_x = x
     self.coord_y = y
@@ -615,7 +558,10 @@ class Unit:
     self.display_y -= Unit.unit_size/2
     #get stats from list
     self.name = stats[0]
-    self.health = stats[1]
+    if current_health != 0:
+      self.health = current_health
+    else:
+      self.health = stats[1]
     self.max_health = stats[1]
     self.regen_value = stats[2]
     self.attack = stats[3]
@@ -712,15 +658,6 @@ class Unit:
         self.health = self.max_health
       print("successful heal other")
       self.next_action()
-
-    '''
-    run this every time a valid action is executed, so the unit moves on to the next action
-        try:
-          self.action = self.action_sequence[self.action_index + 1]
-        except IndexError:
-          unit_reset(self)
-          self.turn_done = True
-'''
 
     #reset display coords (just in case)
     #these are blit coords
@@ -875,16 +812,6 @@ def upgrade_to_naval(old_unit, new_unit):
   new_unit.range += old_unit.range
   return new_unit
 
-'''Player.player_list[0].units.append(Unit(man, 3, 3))
-Player.player_list[0].units.append(Unit(man, 4, 4))
-Player.player_list[0].units.append(Unit(archer, 3, 5))
-Player.player_list[1].units.append(Unit(man, 4, 3))
-Player.player_list[1].units.append(Unit(man, 2, 2))
-Player.player_list[0].units.append(Unit(ship, 5, 6))
-Player.player_list[0].units.append(Unit(steeler, 6, 7))
-Player.player_list[0].units.append(Unit(crossbowman, 1, 1))
-Player.player_list[0].units.append(Unit(swordsman, 0, 0))'''
-
 class Building:
   #building constructor
   #buildings can only be built where a unit of the same player is
@@ -957,9 +884,7 @@ class Building:
     selected_object = Player.player_list[current_player].buildings[-1]
     Player.player_list[current_player].buildings.remove(self)
 
-'''Player.player_list[0].available_upgraded_buildings.append(plantation)
-Player.player_list[0].buildings.append(Building(shipyard, 4, 5))
-Player.player_list[0].buildings.append(Building(mine, 2, 1))'''
+
 
 class City:
   #building constructor
@@ -1016,10 +941,6 @@ class City:
     if self.spawn_timer >= self.max_spawn_timer:
       #spawn timer is full and can't make any more units (draw on top of green letters)
       text(text_display_size, str(self.spawn_timer) + "/" + str(self.max_spawn_timer), (255, 0, 0), x + 100, y + 37.5)
-    
-
-Player.player_list[0].cities.append(City(2, 1, player_number = 0))
-Player.player_list[1].cities.append(City(4, 6, player_number = 1))
 
 def return_occupied(x, y, object):
   #this returns the occupants of a hex
@@ -1119,6 +1040,40 @@ class Tech:
       Player.player_list[current_player].available_actions.append(self.player_action)
     if self.terrain != None:
       Player.player_list[current_player].available_terrain.append(self.terrain)
+
+#unit stats
+#var = ["name", health, regen, attack, defense, range, movement, cost [money, wood, metal, food], timer, sequences, abilities]
+man = ["Man", 8, 3, 6, 2,  1, 2, [5, 1, 1, 1], 10, [["move", "attack"], ["heal"]], []]
+#man can move 1 or attack
+swordsman = ["Swordsman", 12, 4, 9, 3, 1, 2, [10, 3, 5, 2], 15, [["move", "attack"], ["heal"]], []]
+spearman = ["Spearman", 10, 3, 8, 2, 2, 2, [5, 3, 4, 2], 12, [["move", "attack", "attack"], ["heal"]], []]
+axeman = ["Axeman", 12, 4, 20, 3, 1, 1, [5, 2, 5, 1], 13, [["move"], ["attack"], ["heal"]], []]
+shieldman = ["Shieldman", 15, 5, 6, 4, 1, 1, [5, 3, 10, 1], 10, [["move"], ["attack"], ["heal"]], []]
+#scout = ["Scout", Player.player_list[current_player].scouts, 3, 1, 5, 3, 1, 3, [3, 1, 0, 0], 3, [["move", "attack", "move"]], []]
+#scout can move 3, attack 3, and move 3
+#catapult = ["Catapult", Player.player_list[current_player].units, 5, 0, 10, 3, 3, 1, [3, 3, 0, 0], 8, [["move"], ["attack"]], []]
+#catapult can move 1 or attack 1
+archer = ["Archer", 8, 4, 7, 1, 2, 2, [5, 3, 1, 1], 14, [["attack", "move"], ["move", "heal"]], []]
+crossbowman = ["Crossbowman", 5, 2, 15, 1, 3, 2, [25, 10, 5, 3], 17, [["move", "attack"], ["attack", "move"], ["heal"]], []]
+medic = ["Medic", 10, 10, 0, 2, 1, 1, [10, 3, 1, 2], 8, [["move", "heal other"], ["move", "heal"]], []]
+rider = ["Rider", 9, 5, 7, 2, 1, 3, [10, 2, 1, 3], 12, [["move", "attack"], ["move", "heal"]], []]
+knight = ["Knight", 13, 6, 7, 1, 1, 3, [10, 2, 4, 6], 18, [["move", "attack"], ["attack", "move"], ["heal"]], []]
+elephant = ["Elephant", 18, 6, 15, 2, 1, 3, [20, 5, 3, 10], 30, [["move", "attack", "heal"]], []]
+ship = ["Ship", 10, 3, 1, 1, 0, 0, [15, 2, 2, 2], 0, [["move", "attack"], ["move", "heal", "move"]], ["float"]]
+steeler = ["Steeler", 20, 5, 1.5, 1.5, 0, 0, [20, 2, 8, 3], 0, [["move", "attack", "move"], ["heal"]], ["float"]]
+
+#building stats
+#var = ["name", list, cost, production, production speed, possible terrain, abilities, upgrade into]
+lumber_hut = ["Lumber Hut", [10, 5, 3, 3], [3, 0, 0], 1, ["forest"], [], None]
+foundry = ["Foundry", [20, 4, 9, 6], [0, 20, 0], 2, None, [], None]
+#foundry is upgradable, so there's no terrain restrictions: u just build it on top of a mine
+mine = ["Mine", [20, 5, 5, 2], [0, 5, 0], 2, ["mountain"], [], foundry]
+shipyard = ["Shipyard", [25, 4, 3, 5], [0, 0, 0], 1, ["water"], ["shipbuilding"], None]
+port = ["Port", [30, 3, 3, 6], [20, 20, 20], 3, [], ["shipbuilding"], None]
+market = ["Market", [20, 8, 7, 6], [3, 3, 3], 2, ["water"], [], port]
+plantation = ["Plantation", [30, 8, 4, 6], [0, 0, 20], 1, None, ["cultivate"], None]
+farm = ["Farm", [15, 0, 1, 9], [0, 0, 10], 1, ["plains", "forest", "mountain", "water"], ["cultivate"], plantation]
+
 
 tech_offset_x = 0
 tech_offset_y = 0
@@ -1308,7 +1263,64 @@ def same_space(location):
     return True
   else:
     return False
-  
+
+def read_save(save):
+  #read save
+  with open (save, "r") as file:
+    data = file.readlines()
+  #this tells us what line we're on
+  reader = 0
+  while reader <= len(data):
+    if data[reader] == "player":
+      Player.player_list.append(Player())
+      #set resources
+      Player.player_list[-1].money = int(data[reader+1])
+      Player.player_list[-1].wood = int(data[reader+2])
+      Player.player_list[-1].metal = int(data[reader+3])
+      Player.player_list[-1].food = int(data[reader+4])
+      reader += 5
+    elif data[reader] == "unit":
+      Player.playerlist[-1].units.append(Unit(data[reader+1].split(", "), int(data[reader+2].split(", ")[0]), int(data[reader+2].split(", ")[1]), int(data[reader+2].split(", ")[2])))
+      #data[reader+1] will contain all the stats excluding current_health excluding x and y
+      #data[reader+2] will contain the x, y, and current health separated by a ,
+#change player_count to alter the number of players
+#player_count is the number of players
+player_count = 2
+for _ in range(player_count):
+  Player.player_list.append(Player(_))
+#starts at 0, so the first player is player 0
+current_player = 0
+#Player.player_list[current_player] -> this is a Player class object
+#taking that.units is taking that player's units list
+
+Player.player_list[0].color = (0, 255, 255)
+Player.player_list[1].color = (255, 0, 0)
+
+#add starting cities
+Player.player_list[0].cities.append(City(2, 1, player_number = 0))
+Player.player_list[1].cities.append(City(4, 6, player_number = 1))
+#make it so all players can make units
+for _ in Player.player_list:
+  _.available_units.append(man)
+  _.available_naval_units.append(ship)
+
+#for testing:
+'''Player.player_list[0].available_actions.append("chop")
+Player.player_list[0].available_actions.append("cultivate")
+Player.player_list[0].available_actions.append("harvest")
+Player.player_list[0].available_actions.append("grow")'''
+'''Player.player_list[0].units.append(Unit(man, 3, 3))
+Player.player_list[0].units.append(Unit(man, 4, 4))
+Player.player_list[0].units.append(Unit(archer, 3, 5))
+Player.player_list[1].units.append(Unit(man, 4, 3))
+Player.player_list[1].units.append(Unit(man, 2, 2))
+Player.player_list[0].units.append(Unit(ship, 5, 6))
+Player.player_list[0].units.append(Unit(steeler, 6, 7))
+Player.player_list[0].units.append(Unit(crossbowman, 1, 1))
+Player.player_list[0].units.append(Unit(swordsman, 0, 0))'''
+'''Player.player_list[0].available_upgraded_buildings.append(plantation)
+Player.player_list[0].buildings.append(Building(shipyard, 4, 5))
+Player.player_list[0].buildings.append(Building(mine, 2, 1))'''
 
 while True:
   while status == "home":

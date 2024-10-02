@@ -1,0 +1,9 @@
+player
+5
+0
+0
+0
+unit
+building
+city
+tech
