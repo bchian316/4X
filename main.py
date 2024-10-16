@@ -57,7 +57,7 @@ transparent_screen.set_alpha(player_alpha_shade)
 #make sure transparent_screen.blit goes below all displays that are drawn on it
 # Add game logic and functions
 clock = pygame.time.Clock()
-pygame.display.set_caption('pingatopia')
+pygame.display.set_caption('Project #1')
 mouse_pos = pygame.mouse.get_pos()
 mouse_pos = list(mouse_pos)
 mouse_clicked = False
@@ -251,13 +251,6 @@ foreign_unit_select_img = pygame.image.load("selection/foreign select.png").conv
 foreign_building_select_img = pygame.transform.scale(foreign_unit_select_img, (75, 75)).convert_alpha()
 location_img = pygame.image.load("selection/foreign location.png").convert_alpha()
 
-#player_action icons
-chop_img = pygame.image.load("player actions/chop.png").convert_alpha()
-cultivate_img = pygame.image.load("player actions/cultivate.png").convert_alpha()
-harvest_img = pygame.image.load("player actions/harvest.png").convert_alpha()
-extract_img = pygame.image.load("player actions/extract.png").convert_alpha()
-grow_img = pygame.image.load("player actions/grow.png").convert_alpha()
-fertilize_img = pygame.image.load("player actions/fertilize.png").convert_alpha()
 #icon imgs for unit stats
 #defense_img = pygame.image.load("defense.png").convert_alpha()
 
@@ -327,6 +320,15 @@ class Player:
   extract_cost = 5
   grow_cost = 15
   fertilize_cost = 20
+  cost_dict = {"chop":chop_cost, "cultivate":cultivate_cost, "harvest":harvest_cost, "extract":extract_cost, "grow":grow_cost, "fertilize":fertilize_cost}
+  #player_action icons
+  chop_img = pygame.image.load("player actions/chop.png").convert_alpha()
+  cultivate_img = pygame.image.load("player actions/cultivate.png").convert_alpha()
+  harvest_img = pygame.image.load("player actions/harvest.png").convert_alpha()
+  extract_img = pygame.image.load("player actions/extract.png").convert_alpha()
+  grow_img = pygame.image.load("player actions/grow.png").convert_alpha()
+  fertilize_img = pygame.image.load("player actions/fertilize.png").convert_alpha()
+  img_dict = {"chop":chop_img, "cultivate":cultivate_img, "harvest":harvest_img, "extract":extract_img, "grow":grow_img, "fertilize":fertilize_img}
   def __init__(self, player_number):
     #player number determines the order the players play in starting from 0 not 1
     self.player_number = player_number
@@ -468,27 +470,49 @@ class Player:
     for _tech in self.techs:
       if _tech.name == tech_name:
         return True
-  def player_action(self, action, cost = 0):
+  def player_action_eligible(self, action, location):
+    if action == "chop":
+      if location.terrain == "forest":
+        return True
+    elif action == "cultivate":
+      if "crop" in location.features:
+        return True
+    elif action == "harvest":
+      if "seaweed" in location.features:
+        return True
+    elif action == "extract":
+      if "ore" in location.features:
+        return True
+    elif action == "grow":
+      if location.terrain == "plains":
+        return True
+    elif action == "fertilize":
+      if location.terrain != "ocean" and "crop" not in location.features:
+        return True
+    return False
+  def player_action(self, action, location, cost = 0):
     if action == "chop":
       #get wood by cutting down forest into plains
       #location must be at forest tile
       self.wood += 5
-      selected_object.terrain = "plains"
+      location.terrain = "plains"
+      location.img = Location.img_dict["plains"]
     elif action == "cultivate":
       self.food += 3
-      selected_object.features.remove("crop")
-      selected_object.features.append("harvested crop")
+      location.features.remove("crop")
+      location.features.append("harvested crop")
     elif action == "harvest":
       self.money += 10
-      selected_object.features.remove("seaweed")
+      location.features.remove("seaweed")
     elif action == "extract":
       self.money += 20
-      selected_object.features.remove("ore")
+      location.features.remove("ore")
     elif action == "grow":
       #grow forest from plains
-      selected_object.terrain = "forest"
+      location.terrain = "forest"
+      location.img = Location.img_dict["forest"]
     elif action == "fertilize":
-      selected_object.features.append("crop")
+      location.features.append("crop")
     self.money -= cost
   def turn_update_before(self):
     #this takes place at the beginning of turn, where buildings and cities produce resources
@@ -1263,26 +1287,6 @@ def same_space(location):
     return True
   else:
     return False
-
-def read_save(save):
-  #read save
-  with open (save, "r") as file:
-    data = file.readlines()
-  #this tells us what line we're on
-  reader = 0
-  while reader <= len(data):
-    if data[reader] == "player":
-      Player.player_list.append(Player())
-      #set resources
-      Player.player_list[-1].money = int(data[reader+1])
-      Player.player_list[-1].wood = int(data[reader+2])
-      Player.player_list[-1].metal = int(data[reader+3])
-      Player.player_list[-1].food = int(data[reader+4])
-      reader += 5
-    elif data[reader] == "unit":
-      Player.playerlist[-1].units.append(Unit(data[reader+1].split(", "), int(data[reader+2].split(", ")[0]), int(data[reader+2].split(", ")[1]), int(data[reader+2].split(", ")[2])))
-      #data[reader+1] will contain all the stats excluding current_health excluding x and y
-      #data[reader+2] will contain the x, y, and current health separated by a ,
 #change player_count to alter the number of players
 #player_count is the number of players
 player_count = 2
@@ -1583,67 +1587,14 @@ while True:
       #do player action    
       for player_action in enumerate(Player.player_list[current_player].available_actions):
         #doing a player action
-        if Player.player_list[current_player].owns_unit(return_occupied(selected_object.coord_x, selected_object.coord_y, object = "unit")) and not bool(return_occupied(selected_object.coord_x, selected_object.coord_y, object = "building")) and not bool(return_occupied(selected_object.coord_x, selected_object.coord_y, object = "city")):
+        if Player.player_list[current_player].player_action_eligible(player_action[1], selected_object) and Player.player_list[current_player].owns_unit(return_occupied(selected_object.coord_x, selected_object.coord_y, object = "unit")) and not bool(return_occupied(selected_object.coord_x, selected_object.coord_y, object = "building")) and not bool(return_occupied(selected_object.coord_x, selected_object.coord_y, object = "city")):
           #if you own a dude there and there is no building there (to avoid chopping forest where there is a lumber hut) and there is no city there
           #can't do player action when there's a building there
-          #first if statement checks the action, second if statement checks if terrain is compatible, third is the button
-          if player_action[1] == "chop":
-            if selected_object.terrain == "forest":
-              if button(player_action_x + player_action[0] * player_action_size, player_action_y, player_action_size, player_action_size, 20, available = bool(Player.player_list[current_player].money >= Player.chop_cost)):
-                Player.player_list[current_player].player_action("chop", Player.chop_cost)
-            else:
-              pygame.draw.rect(screen, (255, 0, 0), (player_action_x + player_action[0] * player_action_size, player_action_y, player_action_size, player_action_size), 0, 20)
-            screen.blit(chop_img, (player_action_x + player_action[0] * player_action_size, player_action_y))
-            text(25, "Chop", (0, 0, 0), (player_action_x + player_action_size/2) + (player_action[0] * player_action_size), player_action_y - 10, alignx = "center")
-            text(50, str(Player.chop_cost), money_color, (player_action_x + player_action_size/2) + (player_action[0] * player_action_size), player_action_y + 25, alignx = "center")
-              #display chop image
-          elif player_action[1] == "cultivate":
-            if "crop" in selected_object.features:
-              if button(player_action_x + player_action[0] * player_action_size, player_action_y, player_action_size, player_action_size, 20, available = bool(Player.player_list[current_player].money >= Player.cultivate_cost)):
-                Player.player_list[current_player].player_action("cultivate", Player.cultivate_cost)
-            else:
-              pygame.draw.rect(screen, (255, 0, 0), (player_action_x + player_action[0] * player_action_size, player_action_y, player_action_size, player_action_size), 0, 20)  
-            screen.blit(cultivate_img, (player_action_x + player_action[0] * player_action_size, player_action_y))
-            text(25, "Cultivate", (0, 0, 0), (player_action_x + player_action_size/2) + (player_action[0] * player_action_size), player_action_y - 10, alignx = "center")
-            text(50, str(Player.cultivate_cost), money_color, (player_action_x + player_action_size/2) + (player_action[0] * player_action_size), player_action_y + 25, alignx = "center")
-          elif player_action[1] == "harvest":
-            if "seaweed" in selected_object.features:
-              if button(player_action_x + player_action[0] * player_action_size, player_action_y, player_action_size, player_action_size, 20):
-                #seaweed is free (like whaling in polytopia), btn always available
-                Player.player_list[current_player].player_action("harvest")
-            else:
-              pygame.draw.rect(screen, (255, 0, 0), (player_action_x + player_action[0] * player_action_size, player_action_y, player_action_size, player_action_size), 0, 20)
-            screen.blit(harvest_img, (player_action_x + player_action[0] * player_action_size, player_action_y))
-            text(25, "Harvest", (0, 0, 0), (player_action_x + player_action_size/2) + (player_action[0] * player_action_size), player_action_y - 10, alignx = "center")
-            text(50, str(Player.harvest_cost), money_color, (player_action_x + player_action_size/2) + (player_action[0] * player_action_size), player_action_y + 25, alignx = "center")
-          elif player_action[1] == "extract":
-            if "ore" in selected_object.features:
-              if button(player_action_x + player_action[0] * player_action_size, player_action_y, player_action_size, player_action_size, 20):
-                #ore costs stuff, but gives you more in return
-                Player.player_list[current_player].player_action("extract")
-            else:
-              pygame.draw.rect(screen, (255, 0, 0), (player_action_x + player_action[0] * player_action_size, player_action_y, player_action_size, player_action_size), 0, 20)
-            screen.blit(extract_img, (player_action_x + player_action[0] * player_action_size, player_action_y))
-            text(25, "Extract", (0, 0, 0), (player_action_x + player_action_size/2) + (player_action[0] * player_action_size), player_action_y - 10, alignx = "center")
-            text(50, str(Player.extract_cost), money_color, (player_action_x + player_action_size/2) + (player_action[0] * player_action_size), player_action_y + 25, alignx = "center")
-          elif player_action[1] == "grow":
-            if selected_object.terrain == "plains":
-              if button(player_action_x + player_action[0] * player_action_size, player_action_y, player_action_size, player_action_size, 20, available = bool(Player.player_list[current_player].money >= Player.grow_cost)):
-                Player.player_list[current_player].player_action("grow", Player.grow_cost)
-            else:
-              pygame.draw.rect(screen, (255, 0, 0), (player_action_x + player_action[0] * player_action_size, player_action_y, player_action_size, player_action_size), 0, 20)  
-            screen.blit(grow_img, (player_action_x + player_action[0] * player_action_size, player_action_y))
-            text(25, "Grow", (0, 0, 0), (player_action_x + player_action_size/2) + (player_action[0] * player_action_size), player_action_y - 10, alignx = "center")
-            text(50, str(Player.grow_cost), money_color, (player_action_x + player_action_size/2) + (player_action[0] * player_action_size), player_action_y + 25, alignx = "center")
-          elif player_action[1] == "fertilize":
-            if selected_object.terrain != "ocean" and not ("crop" in selected_object.features or "harvested crop" in selected_object.features): #can't grow crop on ocean or on place with already crop
-              if button(player_action_x + player_action[0] * player_action_size, player_action_y, player_action_size, player_action_size, 20, available = bool(Player.player_list[current_player].money >= Player.fertilize_cost)):
-                Player.player_list[current_player].player_action("fertilize", Player.fertilize_cost)
-            else:
-              pygame.draw.rect(screen, (255, 0, 0), (player_action_x + player_action[0] * player_action_size, player_action_y, player_action_size, player_action_size), 0, 20)  
-            screen.blit(fertilize_img, (player_action_x + player_action[0] * player_action_size, player_action_y))
-            text(25, "Fertilize", (0, 0, 0), (player_action_x + player_action_size/2) + (player_action[0] * player_action_size), player_action_y - 10, alignx = "center")
-            text(50, str(Player.fertilize_cost), money_color, (player_action_x + player_action_size/2) + (player_action[0] * player_action_size), player_action_y + 25, alignx = "center")          
+          if button(player_action_x + player_action[0] * player_action_size, player_action_y, player_action_size, player_action_size, 20, available = bool(Player.player_list[current_player].money >= Player.cost_dict[player_action[1]])):
+            Player.player_list[current_player].player_action(player_action[1], selected_object, Player.cost_dict[player_action[1]])
+          screen.blit(Player.img_dict[player_action[1]], (player_action_x + player_action[0] * player_action_size, player_action_y))
+          text(25, player_action[1], (0, 0, 0), (player_action_x + player_action_size/2) + (player_action[0] * player_action_size), player_action_y - 10, alignx = "center")
+          text(50, str(Player.cost_dict[player_action[1]]).capitalize(), money_color, (player_action_x + player_action_size/2) + (player_action[0] * player_action_size), player_action_y + 25, alignx = "center")          
     #keep all buttons on top of this line
     if mouse_clicked:
       #selecting the selected_object
@@ -1805,9 +1756,3 @@ while True:
     clock.tick(FPS)
     text(20, "FPS: " + str(clock.get_fps()), (0, 0, 0), 300, 0, alignx="center")
     pygame.display.update()
-
-
-
-
-
-

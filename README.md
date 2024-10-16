@@ -21,6 +21,7 @@ Buildings:
   Buildings produce resources and can be built by players anywhere their units are
   Buildings have varying costs, production speed, possible terrain, and production
   Buildings are destroyed when opposing units move on them
+  Buidlings can be upgraded into other buildings, which replace the original building
 Cities:
   Cities are captured when moving on a village or an opposing city
   Cities can be upgraded to increase resource production, unit production, and unit cooldown
