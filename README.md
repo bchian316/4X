@@ -29,6 +29,7 @@ Cities:
   Cities have a production bar that is exhausted every time a unit is created
   Different units exhaust the bar in different amounts
   Cities cannot regenerate their exhaustion bar when units are on top of it
+  Cities subtrac their max_spawn_timer every turn: this does not mean they are fully reset to 0, because the spawn_timer sometimes > max_spawn_timer
   Cities retain level when captured by enemies
 Tech:
   Technology is researched by paying gold

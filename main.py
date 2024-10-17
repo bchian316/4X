@@ -64,7 +64,7 @@ mouse_clicked = False
 mouse_up = True
 mouse_down = False
 #later, change this to "home" and create a home screen; this is temporary only
-status = "home"
+status = "playing"
 #when using pygame.transform for any pygame.Surface object (image), the image will be a little distorted after each transformation, so keep a variable set to the original undistorted image and use that image to transform the actual image so it will only be distorted once after each transformation, rather than all the transformations adding up to decay the image very fast
 #only use this procedure for images that undergo pygame.transform.rotate/scale/etc 
 #for images that that don't undergo these transformations, use the original image as the image to transform to save code length
@@ -226,7 +226,7 @@ for row in enumerate(TERRAIN):
     if [coordx, coordy] in VILLAGES:
       features.append("village")
     MAP[coordy].append(Location(coordx, coordy, tile[1], features))
-#important variables for selection and stuff
+#important variables for formatting and stuff
 selected_object = None
 selected_collision_range = 75
 #this is the circle diameter for checking if the player clicked on something
@@ -240,8 +240,6 @@ player_action_size = 75
 option_x = 425
 selection_frame = pygame.image.load("frames/selection frame.png").convert_alpha()
 production_frame = pygame.image.load("frames/production frame.png").convert_alpha()
-#reset selected_unit after player turn is done to prevent other players from controlling a unit that's not theirs
-#terrain images
 #selected images
 unit_select_img = pygame.image.load("selection/owns select.png").convert_alpha()
 building_select_img = pygame.transform.scale(unit_select_img, (75, 75)).convert_alpha()
@@ -250,9 +248,6 @@ unit_location_img = pygame.image.load("selection/owns unit location.png").conver
 foreign_unit_select_img = pygame.image.load("selection/foreign select.png").convert_alpha()
 foreign_building_select_img = pygame.transform.scale(foreign_unit_select_img, (75, 75)).convert_alpha()
 location_img = pygame.image.load("selection/foreign location.png").convert_alpha()
-
-#icon imgs for unit stats
-#defense_img = pygame.image.load("defense.png").convert_alpha()
 
 #map features (food, seaweed, etc)
 def display_map_hex(map):
@@ -527,18 +522,21 @@ class Player:
       building.produce()
     for city in self.cities:
       city.produce()
-      if return_occupied(city.coord_x, city.coord_y, "unit") == False:
-        #cities cannot cooldown if there's a person on it
-        city.spawn_timer = 0
     
     #reset variables so u can't control dudes that belong to other players
     selected_object = None
     #move on to next player
   def turn_update_after(self):
-    #this takes place after turn, where units gain energy
+    #this takes place after turn, where units gain energy and cities reset exhaustion
     for unit in self.units:
       unit.turn_done = False
       unit.unit_reset()
+    for city in self.cities:
+      if return_occupied(city.coord_x, city.coord_y, "unit") == False:
+        #cities cannot cooldown if there's a person on it
+        city.spawn_timer -= city.max_spawn_timer
+        if city.spawn_timer < 0:
+          city.spawn_timer = 0
   def deduct_costs(self, amounts):
     #amounts is a list containing [money, wood, metal, food]
     #if deduct is True, subtract the resources, otherwise, add them
@@ -1519,14 +1517,14 @@ while True:
             if button((Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2), Unit.unit_size * 2, Unit.unit_size * 2, 10, available = bool(Player.player_list[current_player].money >= unit_type[1][7][0] and Player.player_list[current_player].wood >= unit_type[1][7][1] and Player.player_list[current_player].metal >= unit_type[1][7][2] and Player.player_list[current_player].food >= unit_type[1][7][3])):
               print(unit_type[1][0] + " naval unit is spawned")
               Player.player_list[current_player].deduct_costs(unit_type[1][7])
-              old_unit = return_occupied(selected_object.coord_x, selected_object.coord_y, "unit")
+              old_unit_index = Player.player_list[current_player].units.index(return_occupied(selected_object.coord_x, selected_object.coord_y, "unit"))
               #create a new naval unit with the correctly altered stats using the old unit and the naval unit stats
-              new_unit = upgrade_to_naval(old_unit, Unit(unit_type[1], selected_object.coord_x, selected_object.coord_y))
+              new_unit = upgrade_to_naval(Player.player_list[current_player].units[old_unit_index], Unit(unit_type[1], selected_object.coord_x, selected_object.coord_y))
               #replace old unit with new unit
-              Player.player_list[current_player].units[Player.player_list[current_player].units.index(old_unit)] = new_unit
-              Player.player_list[current_player].units[Player.player_list[current_player].units.index(new_unit)].unit_reset()
-              Player.player_list[current_player].units[Player.player_list[current_player].units.index(new_unit)].turn_done = True
-              del(old_unit)
+              Player.player_list[current_player].units[old_unit_index] = new_unit
+              Player.player_list[current_player].units[old_unit_index].unit_reset()
+              Player.player_list[current_player].units[old_unit_index].turn_done = True
+              del(old_unit_index)
               print("turn done")
             screen.blit(Unit.img_dict[unit_type[1][0]], (0, option_x + 25 + unit_type[0] * 50))
             text(20, unit_type[1][0], (0, 0, 0), (Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2))
