@@ -32,6 +32,7 @@ pygame.init()
 from math import sqrt, degrees, atan
 from copy import deepcopy
 from random import randint
+from typing import *
 SCREENLENGTH = 1000
 SCREENHEIGHT = 700
 FPS = 40
@@ -72,7 +73,7 @@ status = "playing"
 #break
 print(pygame.font.get_fonts())
 #good fonts: harrington, 
-def text(size, message, color, textx, texty, alignx = "left", aligny = "top", font = "harrington"):
+def text(size: int, message: str, color: Set[int], textx: int, texty: int, alignx: str = "left", aligny: str = "top", font: str = "harrington") -> None:
   myfont = pygame.font.SysFont(font, size)
   text_width, text_height = myfont.size(message)
   text_surface = myfont.render(message, True, color)
@@ -91,7 +92,7 @@ def text(size, message, color, textx, texty, alignx = "left", aligny = "top", fo
   screen.blit(text_surface, (textx, texty))
 
 btn_pressed_this_frame = False
-def button(x, y, width, height, radius = 0, stroke = 0, available = True, acolor = (0, 255, 0), ucolor = (145, 145, 145, 145), hcolor = (43, 186, 43)):
+def button(x: int, y: int, width: int, height: int, radius: int = 0, stroke: int = 0, available: bool = True, acolor: Set[int] = (0, 255, 0), ucolor: Set[int] = (145, 145, 145, 145), hcolor: Set[int] = (43, 186, 43)) -> bool:
   global coins, btn_pressed_this_frame
   #available is a boolean that determines whether the button is available to be pressed or not
   if available:
@@ -105,18 +106,18 @@ def button(x, y, width, height, radius = 0, stroke = 0, available = True, acolor
   else:
     pygame.draw.rect(screen, ucolor, (x, y, width, height), stroke, radius)
   return False
-def rect_collided(x1, y1, length1, height1, x2, y2, length2, height2):
+def rect_collided(x1: int, y1: int, length1: int, height1: int, x2: int, y2: int, length2: int, height2: int) -> bool:
   #1 = object
   #2 = target
   if x1 > x2 - length1 and x1 < x2 + length2 and y1 > y2 - height1 and y1 < y2 + height2:
     return True
   return False
-def circle_collided(x1, y1, radius1, x2, y2, radius2):
+def circle_collided(x1: int, y1: int, radius1: int, x2: int, y2: int, radius2: int) -> bool:
   distance = sqrt((x2 - x1)**2 + (y2 - y1)**2)
   if distance <= radius1 + radius2:
     return True
   return False
-def get_vel(x1, y1, x2, y2, speed):
+def get_vel(x1: int, y1: int, x2: int, y2: int, speed: int) -> Tuple[float, float]:
   distancex = x2 - x1
   distancey = y2 - y1
   distance = sqrt(distancex**2 + distancey**2)
@@ -131,7 +132,7 @@ hex_size = 100
 offset_x = 250
 offset_y = 100
 
-def coordConvert(coord_x, coord_y):
+def coordConvert(coord_x: int, coord_y: int) -> Tuple[float, float]:
   #this function returns display coordinates from game location coordinates
   display_x = (coord_y - 1)*(-hex_size/4)*sqrt(3)
   display_y = (coord_y - 1)*(hex_size*0.75)
@@ -153,7 +154,7 @@ class Location:
   seaweed_img = pygame.image.load("terrain/seaweed.png").convert_alpha()
   ore_img = pygame.image.load("terrain/ore.png").convert_alpha()
   village_img = pygame.image.load("terrain/village.png").convert_alpha()
-  def __init__(self, coordx, coordy, terrain, features):
+  def __init__(self, coordx: int, coordy: int, terrain: str, features: List[str]):
     self.terrain = terrain
     if self.terrain: #if terrain is not a void
       self.img = Location.img_dict[self.terrain]
@@ -165,7 +166,7 @@ class Location:
     self.display_y -= hex_size/2
     self.display_x -= ((hex_size/2)*sqrt(3))/2
 
-  def display(self, custom = None):
+  def display(self, custom: Optional[Tuple[int, int]] = None) -> None:
     if custom != None:
       coords = custom
     else:
@@ -250,7 +251,7 @@ foreign_building_select_img = pygame.transform.scale(foreign_unit_select_img, (7
 location_img = pygame.image.load("selection/foreign location.png").convert_alpha()
 
 #map features (food, seaweed, etc)
-def display_map_hex(map):
+def display_map_hex(map: List[List[Location]]) -> None:
   #use offsets to move the entire map around
   for row in map:
     for tile in row:
@@ -268,21 +269,21 @@ def display_map_hex(map):
 #MAP[1][0] would be ocean
 #make a list for buildings you can build on the map
 
-def return_Adjacent_hex(x, y):
+def return_Adjacent_hex(x: int, y: int) -> List[Tuple[int, int]]:
   #returns a list of all the adjacent hexes based on one hex
   #the items returned are x and y coords to be used on the map
   adjacent_hexes = []
-  adjacent_hexes.append([x-1, y-1])
-  adjacent_hexes.append([x, y-1])
-  adjacent_hexes.append([x-1, y])
-  adjacent_hexes.append([x+1, y])
-  adjacent_hexes.append([x, y+1])
-  adjacent_hexes.append([x+1, y+1])
+  adjacent_hexes.append((x-1, y-1))
+  adjacent_hexes.append((x, y-1))
+  adjacent_hexes.append((x-1, y))
+  adjacent_hexes.append((x+1, y))
+  adjacent_hexes.append((x, y+1))
+  adjacent_hexes.append((x+1, y+1))
   return adjacent_hexes
   #adjacent_hexes has the coordinates of all the adjacent hexes, not their terrain stuff
   #u can call the terrain manually
 
-def shadeTile(coord_x, coord_y, color):
+def shadeTile(coord_x: int, coord_y: int, color: Tuple[int, int, int]) -> None:
   #coord_x and coord_y are coordinates, not display coordinates
   global hex_size, offset_x, offset_y
   center_x = (coord_y - 1)*(-hex_size/4)*sqrt(3)
@@ -324,7 +325,7 @@ class Player:
   grow_img = pygame.image.load("player actions/grow.png").convert_alpha()
   fertilize_img = pygame.image.load("player actions/fertilize.png").convert_alpha()
   img_dict = {"chop":chop_img, "cultivate":cultivate_img, "harvest":harvest_img, "extract":extract_img, "grow":grow_img, "fertilize":fertilize_img}
-  def __init__(self, player_number):
+  def __init__(self, player_number: int):
     #player number determines the order the players play in starting from 0 not 1
     self.player_number = player_number
     self.color = (randint(0, 255), randint(0, 255), randint(0, 255))
@@ -346,7 +347,7 @@ class Player:
     self.available_naval_units = []
     #available terrain the player's units can be on
     self.available_terrain = ["plains", "forest"]
-  def display_units(self, availability_marker_size = 10):
+  def display_units(self, availability_marker_size: int = 10) -> None:
     global current_player
     #this displays a list of specific units (a unit type)
     #units would be a list containing a specific unit type
@@ -366,7 +367,7 @@ class Player:
       else:
         pygame.draw.circle(screen, (125, 125, 125), (a_unit.display_x + offset_x, a_unit.display_y + offset_y), availability_marker_size)
       text(30, str(self.player_number + 1), (0, 0, 0), a_unit.display_x + offset_x, a_unit.display_y + offset_y, alignx = "center", aligny = "center")
-  def display_buildings(self):
+  def display_buildings(self) -> None:
     #this displays a list of specific units (a unit type)
     #units would be a list containing a specific unit type
     for a_building in self.buildings:
@@ -381,7 +382,7 @@ class Player:
         for level_counter in range(a_building.production_time + 1):
           pygame.draw.line(screen, (0, 0, 0), (a_building.display_x + offset_x + level_counter*(Building.building_size/a_building.production_time), a_building.display_y + offset_y + Building.building_size*0.85), (a_building.display_x + offset_x + level_counter*(Building.building_size/a_building.production_time), a_building.display_y + offset_y + Building.building_size*0.85 + 10), 2)
       text(25, str(self.player_number + 1), (255, 255, 255), a_building.display_x + offset_x + Building.building_size/2, a_building.display_y + offset_y + Building.building_size/2, alignx = "center", aligny = "center")
-  def display_cities(self):
+  def display_cities(self) -> None:
     for a_city in self.cities:
       shadeTile(a_city.coord_x, a_city.coord_y, self.color)
       screen.blit(a_city.image, (a_city.display_x + offset_x, a_city.display_y + offset_y))
@@ -391,7 +392,7 @@ class Player:
         pygame.draw.rect(screen, (255, 0, 0), (a_city.display_x + offset_x, a_city.display_y + offset_y + City.city_size*0.85, City.city_size*(a_city.spawn_timer/a_city.max_spawn_timer), 10))
       for level_counter in range(a_city.level + 1):
         pygame.draw.line(screen, (0, 0, 0), (a_city.display_x + offset_x + level_counter*(City.city_size/a_city.level), a_city.display_y + offset_y + City.city_size*0.85), (a_city.display_x + offset_x + level_counter*(City.city_size/a_city.level), a_city.display_y + offset_y + City.city_size*0.85 + 10), 2)
-  def update(self):
+  def update(self) -> None:
     global selected_object, selected_object
     #this is the update function for the player
     #kill buildings with bad guys on them
@@ -444,28 +445,32 @@ class Player:
     #display units
     for unit in self.units:
       #reset action ranges so they dont stack (happens every frame)
-      unit.action_range = [[unit.coord_x, unit.coord_y]]
+      unit.action_range = [(unit.coord_x, unit.coord_y)]
     self.display_units()
     #update everything:
     #add the money per turn, resources per turn
-  def owns_unit(self, unit):
+  def owns_unit(self, unit) -> bool:
     for _unit in self.units:
         if unit == _unit:
           return True
-  def owns_building(self, building):
+    return False
+  def owns_building(self, building) -> bool:
     for _building in self.buildings:
       if building == _building:
         return True
-  def owns_city(self, city):
+    return False
+  def owns_city(self, city) -> bool:
     for _city in self.cities:
       if city == _city:
         return True
-  def owns_tech(self, tech_name):
+    return False
+  def owns_tech(self, tech_name) -> bool:
     #tech_name should be a string, the name of the tech
     for _tech in self.techs:
       if _tech.name == tech_name:
         return True
-  def player_action_eligible(self, action, location):
+    return False
+  def player_action_eligible(self, action, location) -> bool:
     if action == "chop":
       if location.terrain == "forest":
         return True
@@ -485,7 +490,7 @@ class Player:
       if location.terrain != "ocean" and "crop" not in location.features:
         return True
     return False
-  def player_action(self, action, location, cost = 0):
+  def player_action(self, action: str, location: Location, cost: int = 0) -> None:
     if action == "chop":
       #get wood by cutting down forest into plains
       #location must be at forest tile
@@ -509,7 +514,7 @@ class Player:
     elif action == "fertilize":
       location.features.append("crop")
     self.money -= cost
-  def turn_update_before(self):
+  def turn_update_before(self) -> None:
     #this takes place at the beginning of turn, where buildings and cities produce resources
     global current_player, selected_object
     #reset crop resource
@@ -526,7 +531,7 @@ class Player:
     #reset variables so u can't control dudes that belong to other players
     selected_object = None
     #move on to next player
-  def turn_update_after(self):
+  def turn_update_after(self) -> None:
     #this takes place after turn, where units gain energy and cities reset exhaustion
     for unit in self.units:
       unit.turn_done = False
@@ -537,7 +542,7 @@ class Player:
         city.spawn_timer -= city.max_spawn_timer
         if city.spawn_timer < 0:
           city.spawn_timer = 0
-  def deduct_costs(self, amounts):
+  def deduct_costs(self, amounts: List[int]) -> None:
     #amounts is a list containing [money, wood, metal, food]
     #if deduct is True, subtract the resources, otherwise, add them
     self.money -= amounts[0]
@@ -569,7 +574,7 @@ class Unit:
   steeler_img = pygame.image.load("unit/steeler.png").convert_alpha()
   unit_max_stack = 3
   img_dict = {"Man":man_img, "Rider":rider_img, "Knight":knight_img, "Elephant":elephant_img, "Swordsman":swordsman_img, "Spearman":spearman_img, "Axeman":axeman_img, "Shieldman":shieldman_img, "Archer":archer_img, "Crossbowman":crossbowman_img, "Medic":medic_img, "Ship":ship_img, "Steeler":steeler_img}
-  def __init__(self, stats, x, y, current_health = 0):
+  def __init__(self, stats: List[Any], x: int, y: int, current_health: int = 0):
     #these are hex positions, not blit coords
     self.coord_x = x
     self.coord_y = y
@@ -602,15 +607,15 @@ class Unit:
     self.action = None
     self.action_index = 0
     #action_index starts at 0
-    self.action_range = [[self.coord_x, self.coord_y]]
+    self.action_range = [(self.coord_x, self.coord_y)]
     self.action_range_placeholder = deepcopy(self.action_range)
     #moverange is a list of all the adjacent hexes that the unit can be moved to
-  def unit_reset(self):
+  def unit_reset(self) -> None:
     self.action = None
     self.action_index = 0
     self.action_sequence = []
-    self.action_range = [[self.coord_x, self.coord_y]]
-  def next_action(self):
+    self.action_range = [(self.coord_x, self.coord_y)]
+  def next_action(self) -> None:
     global selected_object, selected_object
     try:
       self.action = self.action_sequence[self.action_index + 1]
@@ -620,7 +625,7 @@ class Unit:
       self.unit_reset()
       self.turn_done = True
       print("turn done")
-  def calculate_damage(self, defender):
+  def calculate_damage(self, defender: 'Unit') -> int:
     attack_damage = (self.health/self.max_health)*self.attack
     defend_damage = (defender.health/defender.max_health)*defender.defense
     #3 will affect the general damage of all attacks
@@ -630,7 +635,7 @@ class Unit:
     if damage < 0:
       damage = 0
     return round(damage)
-  def do_action(self, object):
+  def do_action(self, object: Any) -> None:
     global btn_pressed_this_frame
     #calculate the ranges in display_hints, and actually do the action here
     global selected_object, selected_object
@@ -638,7 +643,7 @@ class Unit:
       #action is a movement order
       #self.action is the number of maximum hexes to move
 
-      if [object.coord_x, object.coord_y] in self.action_range:
+      if (object.coord_x, object.coord_y) in self.action_range:
         btn_pressed_this_frame = True
         #location is within movement range and is not occupied
         print("successful move")
@@ -653,7 +658,7 @@ class Unit:
       #self.action is the number of maximum hexes to move
       #self.action_range will only contain the hexes of the available targeted units, unlike during movement, self.action_range will contain all the hexes within the movement range
 
-      if [object.coord_x, object.coord_y] in self.action_range:
+      if (object.coord_x, object.coord_y) in self.action_range:
         btn_pressed_this_frame = True
         print("successful attack", type(object))
         #the attack is valid, so we move on to the next action
@@ -690,10 +695,10 @@ class Unit:
 
     #change this later
     #self.turn_done = True
-    #self.action_range = [[self.coord_x, self.coord_y]]
+    #self.action_range = [(self.coord_x, self.coord_y)]
 
     #move on to next action
-  def display_hints(self):
+  def display_hints(self) -> None:
     #display the hints for the unit
     #this also calculates the action ranges for the units, not during do_action
     global selected_object, selected_object
@@ -750,7 +755,7 @@ class Unit:
             self.action_range.append(movement_tile)
       #display hints to show the possible attack locations
     elif self.action == "heal":
-      self.action_range = [[self.coord_x, self.coord_y]]
+      self.action_range = [(self.coord_x, self.coord_y)]
     elif self.action == "heal other":
       for heal_counter in range(self.range):
         self.action_range_placeholder = deepcopy(self.action_range)
@@ -767,7 +772,7 @@ class Unit:
       hint_x, hint_y = coordConvert(hint[0], hint[1])
       pygame.draw.circle(screen, (255, 255, 0), (hint_x + offset_x, hint_y + offset_y), 10)
 
-  def display_stats(self, x, y, text_display_size = 20):
+  def display_stats(self, x: int, y: int, text_display_size: int = 20) -> None:
     #x and y should be unit display coords
     #name shown above the unit
     text(text_display_size, str(self.name), (0, 0, 0), x + Unit.unit_size/2, y - 25, alignx = "center")
@@ -799,7 +804,7 @@ small_heal_other_img = pygame.transform.scale(heal_other_img, (small_icon_size, 
 
 skip_action_img = pygame.image.load("unit actions/skip action.png").convert_alpha()
 
-def display_action_sequence(action_sequence, action_index, x, y, mini = False):
+def display_action_sequence(action_sequence: List[str], action_index: int, x: int, y: int, mini: bool = False) -> None:
   if not mini:
     size = icon_size
     move = move_img
@@ -825,7 +830,7 @@ def display_action_sequence(action_sequence, action_index, x, y, mini = False):
     elif action[1] == "heal other":
       screen.blit(heal_other, (action[0]*size + x, y))
 
-def upgrade_to_naval(old_unit, new_unit):
+def upgrade_to_naval(old_unit: Unit, new_unit: Unit) -> Unit:
   #old and new unit should be unit objects
   #health and regen rates don't change
   new_unit.attack = round(new_unit.attack * old_unit.attack)
@@ -849,7 +854,7 @@ class Building:
   plantation_img = pygame.image.load("building/plantation.png").convert_alpha()
   foundry_img = pygame.image.load("building/foundry.png").convert_alpha()
   img_dict = {"Lumber Hut":lumber_hut_img, "Mine":mine_img, "Shipyard":shipyard_img, "Market":market_img, "Port":port_img, "Farm":farm_img, "Plantation":plantation_img, "Foundry":foundry_img}
-  def __init__(self, stats, x, y):
+  def __init__(self, stats: List[Any], x: int, y: int):
     self.coord_x = x
     self.coord_y = y
     #these are blit coords
@@ -873,7 +878,7 @@ class Building:
     self.image = pygame.image.load("building/"+str(self.name).lower()+".png").convert_alpha()
     #upgrade should be a list of the building stats
     self.upgraded_building = stats[6]
-  def produce(self):
+  def produce(self) -> None:
     #this is where the building produces resources
     #run this in the end_turn button clicked
     self.production_timer += 1
@@ -888,7 +893,7 @@ class Building:
           animation_list.append(resourceAnimation([0, 0, 0, 1], randint(round(self.display_x + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_x + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_y + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_y + offset_y + City.city_size/2 + resourceAnimation.animation_range/2)), SCREENLENGTH - 12.5, 137.5, 25, food_resource_img))
         MAP[self.coord_y][self.coord_x].features.remove("crop")
         MAP[self.coord_y][self.coord_x].features.append("harvested crop")
-  def display_stats(self, x, y, text_display_size = 20):
+  def display_stats(self, x: int, y: int, text_display_size: int = 20) -> None:
     #change these to imgs later
     text(text_display_size, str(self.name), (0, 0, 0), x + 37.5, y - 15, alignx = "center")
     if self.production[0] > 0 or self.production[1] > 0 or self.production[2] > 0:
@@ -899,7 +904,7 @@ class Building:
       text(text_display_size, str(self.production_timer + 1) + "/" + str(self.production_time) + " turns", (255, 0, 0), x + 12.5, y + 75)
       if self.production_timer + 1 == self.production_time:
         text(text_display_size, str(self.production_timer + 1) + "/" + str(self.production_time) + " turns", (0, 184, 0), x + 12.5, y + 75)
-  def upgrade(self):
+  def upgrade(self) -> None:
     global selected_object
     #buildings can only be upgraded into one building
     Player.player_list[current_player].buildings.append(Building(self.upgraded_building, self.coord_x, self.coord_y))
@@ -916,7 +921,7 @@ class City:
   max_level = 5
   cooldown_img = pygame.image.load("stats/timer.png").convert_alpha()
   upgrade_img = pygame.image.load("city/upgrade.png")
-  def __init__(self, x, y, player_number = None, level = 1):
+  def __init__(self, x: int, y: int, player_number: int, level: int = 1):
     self.coord_x = x
     self.coord_y = y
     #these are blit coords
@@ -932,7 +937,7 @@ class City:
     #prevent unit spamming
     self.spawn_timer = 0
     self.max_spawn_timer = self.level * 10
-  def produce(self):
+  def produce(self) -> None:
     #this is where the city produces money
     #run this in the end_turn button clicked
     #add for loop for animation
@@ -945,7 +950,7 @@ class City:
       animation_list.append(resourceAnimation([0, 0, 1, 0], randint(round(self.display_x + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_x + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_y + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_y + offset_y + City.city_size/2 + resourceAnimation.animation_range/2)), SCREENLENGTH - 12.5, 112.5, 25, metal_resource_img))
     for _ in range(self.income[3]):
       animation_list.append(resourceAnimation([0, 0, 0, 1], randint(round(self.display_x + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_x + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_y + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_y + offset_y + City.city_size/2 + resourceAnimation.animation_range/2)), SCREENLENGTH - 12.5, 137.5, 25, food_resource_img))
-  def upgrade(self):
+  def upgrade(self) -> None:
     self.level += 1
     self.income[0] += 5
     self.income[1] += 1
@@ -955,7 +960,7 @@ class City:
     self.cost = [self.level**2 * 5, self.level**2, self.level**2, self.level**2]
     self.max_spawn_timer += 10
     self.image = pygame.image.load("city/"+str(self.level)+".png").convert_alpha()
-  def display_stats(self, x, y, text_display_size = 20):
+  def display_stats(self, x: int, y: int, text_display_size: int = 20) -> None:
     text(text_display_size, "Level " + str(self.level), (0, 0, 0), x + 75, y - 12.5, alignx= "center")
     display_resources(self.income, x + 150, y - 25)
     screen.blit(City.cooldown_img, (x + 75, y + 37.5))
@@ -964,7 +969,7 @@ class City:
       #spawn timer is full and can't make any more units (draw on top of green letters)
       text(text_display_size, str(self.spawn_timer) + "/" + str(self.max_spawn_timer), (255, 0, 0), x + 100, y + 37.5)
 
-def return_occupied(x, y, object):
+def return_occupied(x: int, y: int, object: str) -> Any:
   #this returns the occupants of a hex
   #x and y are the coords of the hex
   #these are hex positions, not blit coords
@@ -993,7 +998,7 @@ wood_resource_img = pygame.image.load("resource/wood.png").convert_alpha()
 metal_resource_img = pygame.image.load("resource/metal.png").convert_alpha()
 food_resource_img = pygame.image.load("resource/food.png").convert_alpha()
 
-def display_resources(resources, x, y, display_all = False, size = 20):
+def display_resources(resources: List[int], x: int, y: int, display_all: bool = False, size: int = 20) -> None:
   #x is the line between the images and the numbers
   #resources is [money, wood, metal, food]
   display_counter = 0
@@ -1032,7 +1037,7 @@ def display_resources(resources, x, y, display_all = False, size = 20):
 
 class Tech:
   tech_size = 100
-  def __init__(self, stats):
+  def __init__(self, stats: List[Any]):
     #stats = [name, cost, x, y, preceding_tech, unit, building, player_action, terrain]
     #x and y are where they should be displayed
     self.name = stats[0]
@@ -1155,12 +1160,12 @@ all_techs = [logging, archery, engineering, forestry, reforestation, medicine, c
 animating = False
 animation_list = []
 class Animation:
-  def __init__(self, x, y, img, img_size):
+  def __init__(self, x: int, y: int, img: pygame.Surface, img_size: int):
     self.x = x
     self.y = y
     self.img = img
     self.img_size = img_size
-  def update(self):
+  def update(self) -> None:
     self.x += self.velx
     self.y += self.vely
     try:
@@ -1174,7 +1179,7 @@ class resourceAnimation(Animation):
   #therefore, the lower the number, the faster the object, and vice versa
   animation_range = 80
   img_size = 25
-  def __init__(self, value, x, y, targetx, targety, targetsize, img):
+  def __init__(self, value: List[int], x: int, y: int, targetx: int, targety: int, targetsize: int, img: pygame.Surface):
     super().__init__(x, y, img, resourceAnimation.img_size)
     #value should be a list containing the resource of the thing
     self.value = value
@@ -1188,16 +1193,16 @@ class damageAnimation(Animation):
   max_distance = 100
   img = pygame.image.load("stats/health.png").convert_alpha()
   img_size = 25
-  def __init__(self, x, y):
+  def __init__(self, x: int, y: int):
     super().__init__(x, y, damageAnimation.img, damageAnimation.img_size)
     self.velx, self.vely = pygame.math.Vector2(0, damageAnimation.sprite_speed).rotate(randint(0, 360))
     self.distance_traveled = 0
 class attackAnimation(Animation):
   sprite_speed = 10
   size = 50
-  def __init__(self, x, y, img, start, end):
+  def __init__(self, x: int, y: int, img: pygame.Surface, start: Tuple[int, int], end: Tuple[int, int]):
     super().__init__(x, y, attackAnimation.size)
-def destroyAnimation():
+def destroyAnimation() -> None:
   deletion_counter = 0
   while deletion_counter < len(animation_list):
     #building_type will be a list of a specific building type
@@ -1221,7 +1226,7 @@ def destroyAnimation():
         continue
     deletion_counter += 1
 
-def receive_input(class_object):
+def receive_input(class_object: type) -> Any:
   #run through all objects that can be clicked on
   global mouse_clicked, MAP, MAP_LENGTH, selected_collision_range
   #can only receive input if user hasn't clicked on anything yet (btn_pressed_this_frame == False)
@@ -1250,38 +1255,37 @@ def receive_input(class_object):
                 return tile[1]
   return None
 selection_order = [Unit, Building, City, Location, None]
-selection_counter = 0
-def alternate_selection():
-  global selected_object, selection_order, btn_pressed_this_frame
-  for object_type in selection_order[selection_order.index(type(selected_object))+1:]:
+def alternate_selection(object) -> Any:
+  #this alternates the parameter object
+  global selection_order, btn_pressed_this_frame
+  for object_type in selection_order[selection_order.index(type(object))+1:]:
     if object_type == Unit:
-      if return_occupied(selected_object.coord_x, selected_object.coord_y, "unit"):
+      if return_occupied(object.coord_x, object.coord_y, "unit"):
         btn_pressed_this_frame = True
-        return return_occupied(selected_object.coord_x, selected_object.coord_y, "unit")
+        return return_occupied(object.coord_x, object.coord_y, "unit")
     elif object_type == Building:
-      if return_occupied(selected_object.coord_x, selected_object.coord_y, "building"):
+      if return_occupied(object.coord_x, object.coord_y, "building"):
         btn_pressed_this_frame = True
-        return return_occupied(selected_object.coord_x, selected_object.coord_y, "building")
+        return return_occupied(object.coord_x, object.coord_y, "building")
     elif object_type == City:
-      if return_occupied(selected_object.coord_x, selected_object.coord_y, "city"):
+      if return_occupied(object.coord_x, object.coord_y, "city"):
         btn_pressed_this_frame = True
-        return return_occupied(selected_object.coord_x, selected_object.coord_y, "city")
+        return return_occupied(object.coord_x, object.coord_y, "city")
     elif object_type == Location:
       btn_pressed_this_frame = True
-      return MAP[selected_object.coord_y][selected_object.coord_x]
+      return MAP[object.coord_y][object.coord_x]
     elif object_type == None:
       btn_pressed_this_frame = True
       return None
   return None
 
-def same_space(location):
+def same_space(location: Tuple[int, int]) -> bool:
   #contrasts a thing with selected_object
   #returns if 2 things are in the same place
   global selected_object
   if selected_object == None:
     return False
-  location2 = (selected_object.coord_x, selected_object.coord_y)
-  if location == location2:
+  if location == (selected_object.coord_x, selected_object.coord_y):
     return True
   else:
     return False
@@ -1299,8 +1303,8 @@ Player.player_list[0].color = (0, 255, 255)
 Player.player_list[1].color = (255, 0, 0)
 
 #add starting cities
-Player.player_list[0].cities.append(City(2, 1, player_number = 0))
-Player.player_list[1].cities.append(City(4, 6, player_number = 1))
+Player.player_list[0].cities.append(City(2, 1, 0))
+Player.player_list[1].cities.append(City(4, 6, 1))
 #make it so all players can make units
 for _ in Player.player_list:
   _.available_units.append(man)
@@ -1491,7 +1495,7 @@ while True:
             selected_object.action_sequence = choice[1]
             selected_object.action = selected_object.action_sequence[0]
             selected_object.action_index = 0
-            selected_object.action_range = [[selected_object.coord_x, selected_object.coord_y]]
+            selected_object.action_range = [(selected_object.coord_x, selected_object.coord_y)]
             print(selected_object.action_sequence)
             break
           display_action_sequence(choice[1], -1, 0, option_x + choice[0] * 50, mini = True)
@@ -1519,9 +1523,8 @@ while True:
               Player.player_list[current_player].deduct_costs(unit_type[1][7])
               old_unit_index = Player.player_list[current_player].units.index(return_occupied(selected_object.coord_x, selected_object.coord_y, "unit"))
               #create a new naval unit with the correctly altered stats using the old unit and the naval unit stats
-              new_unit = upgrade_to_naval(Player.player_list[current_player].units[old_unit_index], Unit(unit_type[1], selected_object.coord_x, selected_object.coord_y))
               #replace old unit with new unit
-              Player.player_list[current_player].units[old_unit_index] = new_unit
+              Player.player_list[current_player].units[old_unit_index] = upgrade_to_naval(Player.player_list[current_player].units[old_unit_index], Unit(unit_type[1], selected_object.coord_x, selected_object.coord_y))
               Player.player_list[current_player].units[old_unit_index].unit_reset()
               Player.player_list[current_player].units[old_unit_index].turn_done = True
               del(old_unit_index)
@@ -1611,7 +1614,7 @@ while True:
               else:
                 #selected object is the same unit
                 print("same unit")
-                selected_object = alternate_selection()
+                selected_object = alternate_selection(selected_object)
       if not btn_pressed_this_frame:
         for player in Player.player_list:
           for building in player.buildings:
@@ -1621,7 +1624,7 @@ while True:
                 btn_pressed_this_frame = True
                 selected_object = building
               else:
-                selected_object = alternate_selection()
+                selected_object = alternate_selection(selected_object)
       if not btn_pressed_this_frame:
         for player in Player.player_list:
           for city in player.cities:
@@ -1630,7 +1633,7 @@ while True:
                 btn_pressed_this_frame = True
                 selected_object = city
               else:
-                selected_object = alternate_selection()
+                selected_object = alternate_selection(selected_object)
       if not btn_pressed_this_frame:
         #we are selecting location
         for row in enumerate(MAP):
@@ -1642,7 +1645,7 @@ while True:
                     btn_pressed_this_frame = True
                     selected_object = tile[1]
                   else:
-                    selected_object = alternate_selection()
+                    selected_object = alternate_selection(selected_object)
     for a_player in enumerate(Player.player_list):
       #this also resets each unit'saction_range, so keep this above the display_hints method
       a_player[1].update()

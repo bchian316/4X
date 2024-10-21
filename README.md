@@ -21,7 +21,7 @@ Buildings:
   Buildings produce resources and can be built by players anywhere their units are
   Buildings have varying costs, production speed, possible terrain, and production
   Buildings are destroyed when opposing units move on them
-  Buidlings can be upgraded into other buildings, which replace the original building
+  Buildings can be upgraded into other buildings, which replace the original building
 Cities:
   Cities are captured when moving on a village or an opposing city
   Cities can be upgraded to increase resource production, unit production, and unit cooldown
@@ -31,6 +31,7 @@ Cities:
   Cities cannot regenerate their exhaustion bar when units are on top of it
   Cities subtrac their max_spawn_timer every turn: this does not mean they are fully reset to 0, because the spawn_timer sometimes > max_spawn_timer
   Cities retain level when captured by enemies
+  Cities retain spawn timer when captured by enemies
 Tech:
   Technology is researched by paying gold
   Technology allows for creation of new units, buildings, actions, and terrain movement
