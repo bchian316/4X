@@ -681,8 +681,8 @@ class Unit:
     elif self.action == "heal other" and Player.player_list[current_player].owns_unit(object):
       btn_pressed_this_frame = True
       object.health += object.regen_value
-      if self.health > self.max_health:
-        self.health = self.max_health
+      if object.health > object.max_health:
+        object.health = object.max_health
       print("successful heal other")
       self.next_action()
 
@@ -1075,7 +1075,7 @@ man = ["Man", 8, 3, 6, 2,  1, 2, [5, 1, 1, 1], 10, [["move", "attack"], ["heal"]
 swordsman = ["Swordsman", 12, 4, 9, 3, 1, 2, [10, 3, 5, 2], 15, [["move", "attack"], ["heal"]], []]
 spearman = ["Spearman", 10, 3, 8, 2, 2, 2, [5, 3, 4, 2], 12, [["move", "attack", "attack"], ["heal"]], []]
 axeman = ["Axeman", 12, 4, 20, 3, 1, 1, [5, 2, 5, 1], 13, [["move"], ["attack"], ["heal"]], []]
-shieldman = ["Shieldman", 15, 5, 6, 4, 1, 1, [5, 3, 10, 1], 10, [["move"], ["attack"], ["heal"]], []]
+shieldman = ["Shieldman", 15, 5, 6, 4, 1, 1, [5, 3, 10, 1], 10, [["move"], ["attack"]], []]
 #scout = ["Scout", Player.player_list[current_player].scouts, 3, 1, 5, 3, 1, 3, [3, 1, 0, 0], 3, [["move", "attack", "move"]], []]
 #scout can move 3, attack 3, and move 3
 #catapult = ["Catapult", Player.player_list[current_player].units, 5, 0, 10, 3, 3, 1, [3, 3, 0, 0], 8, [["move"], ["attack"]], []]
@@ -1125,6 +1125,8 @@ sharpening_img = pygame.image.load("tech/sharpening.png").convert_alpha()
 sharpening = ["Sharpening", 25, 450, 100, smithery, spearman, None, None, None, None, sharpening_img]
 armoring_img = pygame.image.load("tech/armoring.png")
 armoring = ["Armoring", 25, 350, 150, smithery, shieldman, None, None, None, None, armoring_img]
+molding_img = pygame.image.load("tech/molding.png")
+molding = ["Molding", 30, 200, 150, smithery, axeman, None, None, None, None, molding_img]
 mining_img = pygame.image.load("tech/mining.png").convert_alpha()
 mining = ["Mining", 10, 475, 300, climbing, None, mine, None, None, None, mining_img]
 smelting_img = pygame.image.load("tech/smelting.png").convert_alpha()
@@ -1155,7 +1157,7 @@ agriculture_img = pygame.image.load("tech/agriculture.png").convert_alpha()
 agriculture = ["Agriculture", 25, 750, 50, farming, None, None, plantation, None, None, agriculture_img]
 fertilization_img = pygame.image.load("tech/fertilization.png").convert_alpha()
 fertilization = ["Fertilization", 20, 825, 150, farming, None, None, None, "fertilize", None, fertilization_img]
-all_techs = [logging, archery, engineering, forestry, reforestation, medicine, climbing, smithery, sharpening, armoring, mining, smelting, extraction, swimming, sailing, trade, economics, aquaculture, cultivation, riding, honor, taming, farming, agriculture, fertilization]
+all_techs = [logging, archery, engineering, forestry, reforestation, medicine, climbing, smithery, sharpening, armoring, molding, mining, smelting, extraction, swimming, sailing, trade, economics, aquaculture, cultivation, riding, honor, taming, farming, agriculture, fertilization]
 
 animating = False
 animation_list = []
@@ -1276,19 +1278,8 @@ def alternate_selection(object) -> Any:
       return MAP[object.coord_y][object.coord_x]
     elif object_type == None:
       btn_pressed_this_frame = True
-      return None
   return None
 
-def same_space(location: Tuple[int, int]) -> bool:
-  #contrasts a thing with selected_object
-  #returns if 2 things are in the same place
-  global selected_object
-  if selected_object == None:
-    return False
-  if location == (selected_object.coord_x, selected_object.coord_y):
-    return True
-  else:
-    return False
 #change player_count to alter the number of players
 #player_count is the number of players
 player_count = 2
@@ -1402,12 +1393,53 @@ while True:
     if pressed_keys[pygame.K_RIGHT] or pressed_keys[pygame.K_d]:
       offset_x -= 10
 
+    '''display order:
+    map
+    cities/buildings
+    units
+    hints
+    selection icons
+    frames
+    detailed view of selected object
+    buttons/options: (units sequences, buildings, buildings upgrades, city upgrades, player actions, etc)'''
     display_map_hex(MAP)
+
+    #display all units, buildings, cities of each player
+    for a_player in enumerate(Player.player_list):
+      #this also resets each unit'saction_range, so keep this above the display_hints method
+      a_player[1].update()
+    #even though all player units are displayed, make it so only the units belonging to current_player are controlled
+
+    if isinstance(selected_object, Unit) and selected_object.turn_done == False and selected_object.action_sequence != []:
+      #only display hints if unit has selected a sequence and his turn is not done
+      selected_object.display_hints()
+    #display selection icons
+    if selected_object != None:
+      if isinstance(selected_object, Unit):
+        screen.blit(unit_select_img, (selected_object.display_x + offset_x, selected_object.display_y + offset_y))
+        if not Player.player_list[current_player].owns_unit(selected_object):
+          screen.blit(foreign_unit_select_img, (selected_object.display_x + offset_x, selected_object.display_y + offset_y))
+      elif isinstance(selected_object, Building):
+        screen.blit(building_select_img, (selected_object.display_x + offset_x, selected_object.display_y + offset_y))
+        if not Player.player_list[current_player].owns_building(selected_object):
+          #if player does not own the building, draw the unowned icon above the regular icon
+          screen.blit(foreign_building_select_img, (selected_object.display_x + offset_x, selected_object.display_y + offset_y))
+      elif isinstance(selected_object, City):
+        screen.blit(building_select_img, (selected_object.display_x + offset_x, selected_object.display_y + offset_y))
+        if not Player.player_list[current_player].owns_city(selected_object):
+          screen.blit(foreign_building_select_img, (selected_object.display_x + offset_x, selected_object.display_y + offset_y))
+      elif isinstance(selected_object, Location):
+        screen.blit(location_img, (selected_object.display_x + offset_x, selected_object.display_y + offset_y))
+        if Player.player_list[current_player].owns_unit(return_occupied(selected_object.coord_x, selected_object.coord_y, "unit")):
+          screen.blit(unit_location_img, (selected_object.display_x + offset_x, selected_object.display_y + offset_y))
+        elif Player.player_list[current_player].owns_building(return_occupied(selected_object.coord_x, selected_object.coord_y, "building")):
+          screen.blit(location_select_img, (selected_object.display_x + offset_x, selected_object.display_y + offset_y))
+        elif Player.player_list[current_player].owns_city(return_occupied(selected_object.coord_x, selected_object.coord_y, "city")):
+          screen.blit(location_select_img, (selected_object.display_x + offset_x, selected_object.display_y + offset_y))
+
     #create a rect area for selected, targeted, and location
     screen.blit(selection_frame, (0, 0))
-
     #display selected object
-    
     text(20, "Selected:", (0, 0, 255), 0, 50)
     #displaying the selected object at the corner of screen depending on what it is
     if selected_object != None:
@@ -1607,8 +1639,8 @@ while True:
           for unit in player.units:
             if circle_collided(mouse_pos[0], mouse_pos[1], 1, unit.display_x + Unit.unit_size/2 + offset_x, unit.display_y + Unit.unit_size/2 + offset_y, selected_collision_range/2):
               #if player's click did not land on any unit, we move on to building
-              if not same_space((unit.coord_x, unit.coord_y)):
-                #if the unit is already the selected object, allow other objects in the same place to be selected
+              if selected_object == None or (unit.coord_x, unit.coord_y) != (selected_object.coord_x, selected_object.coord_y):
+                #if player has nothing selected or player selected a different space
                 btn_pressed_this_frame = True
                 selected_object = unit
               else:
@@ -1619,7 +1651,7 @@ while True:
         for player in Player.player_list:
           for building in player.buildings:
             if circle_collided(mouse_pos[0], mouse_pos[1], 1, building.display_x + Building.building_size/2 + offset_x, building.display_y + Building.building_size/2 + offset_y, selected_collision_range/2):
-              if not same_space((building.coord_x, building.coord_y)):
+              if selected_object == None or (building.coord_x, building.coord_y) != (selected_object.coord_x, selected_object.coord_y):
                 #allow the player to select something else on the same square if the object is the same building already
                 btn_pressed_this_frame = True
                 selected_object = building
@@ -1629,7 +1661,7 @@ while True:
         for player in Player.player_list:
           for city in player.cities:
             if circle_collided(mouse_pos[0], mouse_pos[1], 1, city.display_x + City.city_size/2 + offset_x, city.display_y + City.city_size/2 + offset_y, selected_collision_range/2):
-              if not same_space((city.coord_x, city.coord_y)):
+              if selected_object == None or (city.coord_x, city.coord_y) != (selected_object.coord_x, selected_object.coord_y):
                 btn_pressed_this_frame = True
                 selected_object = city
               else:
@@ -1641,42 +1673,12 @@ while True:
             if circle_collided(mouse_pos[0], mouse_pos[1], 1, tile[1].display_x + offset_x + hex_size*sqrt(3)/4, tile[1].display_y + offset_y + hex_size/2, selected_collision_range/2):
               if tile[0] >= 0 and tile[0] <= MAP_LENGTH and row[0] >= 0 and row[0] <= MAP_LENGTH:
                 if MAP[tile[0]][row[0]].terrain != "":
-                  if not same_space((tile[1].coord_x, tile[1].coord_y)):
+                  if selected_object == None or (tile[1].coord_x, tile[1].coord_y) != (selected_object.coord_x, selected_object.coord_y):
                     btn_pressed_this_frame = True
                     selected_object = tile[1]
                   else:
                     selected_object = alternate_selection(selected_object)
-    for a_player in enumerate(Player.player_list):
-      #this also resets each unit'saction_range, so keep this above the display_hints method
-      a_player[1].update()
-    #even though all player units are displayed, make it so only the units belonging to current_player are controlled
 
-    if isinstance(selected_object, Unit) and selected_object.turn_done == False and selected_object.action_sequence != []:
-      #only display hints if unit has selected a sequence and his turn is not done
-      selected_object.display_hints()
-    #display selection icons
-    if selected_object != None:
-      if isinstance(selected_object, Unit):
-        screen.blit(unit_select_img, (selected_object.display_x + offset_x, selected_object.display_y + offset_y))
-        if not Player.player_list[current_player].owns_unit(selected_object):
-          screen.blit(foreign_unit_select_img, (selected_object.display_x + offset_x, selected_object.display_y + offset_y))
-      elif isinstance(selected_object, Building):
-        screen.blit(building_select_img, (selected_object.display_x + offset_x, selected_object.display_y + offset_y))
-        if not Player.player_list[current_player].owns_building(selected_object):
-          #if player does not own the building, draw the unowned icon above the regular icon
-          screen.blit(foreign_building_select_img, (selected_object.display_x + offset_x, selected_object.display_y + offset_y))
-      elif isinstance(selected_object, City):
-        screen.blit(building_select_img, (selected_object.display_x + offset_x, selected_object.display_y + offset_y))
-        if not Player.player_list[current_player].owns_city(selected_object):
-          screen.blit(foreign_building_select_img, (selected_object.display_x + offset_x, selected_object.display_y + offset_y))
-      elif isinstance(selected_object, Location):
-        screen.blit(location_img, (selected_object.display_x + offset_x, selected_object.display_y + offset_y))
-        if Player.player_list[current_player].owns_unit(return_occupied(selected_object.coord_x, selected_object.coord_y, "unit")):
-          screen.blit(unit_location_img, (selected_object.display_x + offset_x, selected_object.display_y + offset_y))
-        elif Player.player_list[current_player].owns_building(return_occupied(selected_object.coord_x, selected_object.coord_y, "building")):
-          screen.blit(location_select_img, (selected_object.display_x + offset_x, selected_object.display_y + offset_y))
-        elif Player.player_list[current_player].owns_city(return_occupied(selected_object.coord_x, selected_object.coord_y, "city")):
-          screen.blit(location_select_img, (selected_object.display_x + offset_x, selected_object.display_y + offset_y))
     destroyAnimation()
     for animation in animation_list:
       animation.update()
