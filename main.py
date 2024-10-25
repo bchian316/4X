@@ -205,11 +205,11 @@ TERRAIN = [["plains", "plains", "mountain", "plains", "forest", "", "", "", ""],
 #this is the side length of the map
 MAP_LENGTH = len(TERRAIN)-1
 #useless for now
-CROP = [[5, 1], [5, 2], [6, 2], [3, 3]]
+CROP = [(5, 10), (5, 2), (6, 2), (3, 3)]
 HARVESTED_CROP = []
-SEAWEED = [[6, 7], [7, 7], [8, 7], [6, 8], [7, 8]]
-ORE = [[2, 3], [3, 5], [5, 6], [4, 3], [6, 4], [7, 4]]
-VILLAGES = [[0, 2], [1, 0], [2, 4], [5, 1], [5, 7], [6, 6], [3, 7]]
+SEAWEED = [(6, 7), (7, 7), (8, 7), (6, 8), (7, 8)]
+ORE = [(2, 3), (3, 5), (5, 6), (4, 3), (6, 4), (7, 4)]
+VILLAGES = [(0, 2), (1, 0), (2, 4), (5, 1), (5, 7), (6, 6), (3, 7)]
 MAP = []
 #configure map
 for row in enumerate(TERRAIN):
@@ -218,15 +218,15 @@ for row in enumerate(TERRAIN):
   for tile in enumerate(row[1]):
     coordx = tile[0]
     features = []
-    if [coordx, coordy] in CROP:
+    if (coordx, coordy) in CROP:
       features.append("crop")
-    if [coordx, coordy] in HARVESTED_CROP:
+    if (coordx, coordy) in HARVESTED_CROP:
       features.append("harvested crop")
-    if [coordx, coordy] in SEAWEED:
+    if (coordx, coordy) in SEAWEED:
       features.append("seaweed")
-    if [coordx, coordy] in ORE:
+    if (coordx, coordy) in ORE:
       features.append("ore")
-    if [coordx, coordy] in VILLAGES:
+    if (coordx, coordy) in VILLAGES:
       features.append("village")
     MAP[coordy].append(Location((coordx, coordy), tile[1], features))
 #important variables for formatting and stuff
@@ -393,23 +393,9 @@ class Player:
         pygame.draw.rect(screen, (255, 0, 0), (a_city.display_coords[0] + offset_x, a_city.display_coords[1] + offset_y + City.city_size*0.85, City.city_size*(a_city.spawn_timer/a_city.max_spawn_timer), 10))
       for level_counter in range(a_city.level + 1):
         pygame.draw.line(screen, (0, 0, 0), (a_city.display_coords[0] + offset_x + level_counter*(City.city_size/a_city.level), a_city.display_coords[1] + offset_y + City.city_size*0.85), (a_city.display_coords[0] + offset_x + level_counter*(City.city_size/a_city.level), a_city.display_coords[1] + offset_y + City.city_size*0.85 + 10), 2)
-  def update(self) -> None:
-    global selected_object, selected_object
-    #this is the update function for the player
-    #kill buildings with bad guys on them
-    deletion_counter = 0
-    while deletion_counter < len(self.buildings):
-      #building_type will be a list of a specific building type
-      if return_occupied(self.buildings[deletion_counter].coords[0], self.buildings[deletion_counter].coords[1], object = "unit") and not return_occupied(self.buildings[deletion_counter].coords[0], self.buildings[deletion_counter].coords[1], object = "unit") in self.units:
-        #if there is dude on buildings AND u don't own him
-        #remove the building
-        print("building converted")
-        if selected_object == self.buildings[deletion_counter]:
-          selected_object = None
-        self.buildings.pop(deletion_counter)
-        continue
-      deletion_counter += 1
-    #delete dead units
+  def updateUnits(self) -> None:
+    global selected_object
+    #kill 0 health units
     deletion_counter = 0
     while deletion_counter < len(self.units):
       if self.units[deletion_counter].health <= 0:
@@ -420,24 +406,39 @@ class Player:
         self.units.pop(deletion_counter)
         continue
       deletion_counter += 1
+  def updateBuildings(self) -> None:
+    global selected_object
+    #convert buildings
     deletion_counter = 0
-    for unit in self.units:
-      if return_occupied(unit.coords[0], unit.coords[1], object = "city"):
-        #if there is a unit on the city
-        if not self.player_number == return_occupied(unit.coords[0], unit.coords[1], object = "city").player_number:
-          #if unit's player doesn't own the city
-          stolen_city = return_occupied(unit.coords[0], unit.coords[1], object = "city")
-          #stolen_city is the city that the unit is on, will be a object of City
-          Player.player_list[stolen_city.player_number].cities.remove(stolen_city)
-          #remove city from previous player's list
-          stolen_city.player_number = self.player_number
-          Player.player_list[self.player_number].cities.append(stolen_city)
-          #add city to player's list
-      elif [unit.coords[0], unit.coords[1]] in VILLAGES:
-        #if unit is on a village
-        Player.player_list[self.player_number].cities.append(City(unit.coords, self.player_number))
-        MAP[unit.coords[1]][unit.coords[0]].features.remove("village")
-        print("village converted")
+    while deletion_counter < len(self.buildings):
+      #building_type will be a list of a specific building type
+      if return_occupied(self.buildings[deletion_counter].coords, object = "unit"):
+        if not return_occupied(self.buildings[deletion_counter].coords, object = "unit") in self.units:
+          Player.player_list[return_occupied(self.buildings[deletion_counter].coords, object = "unit").player_number].buildings.append(self.buildings[deletion_counter])
+          Player.player_list[return_occupied(self.buildings[deletion_counter].coords, object = "unit").player_number].buildings[-1].player_number = return_occupied(self.buildings[deletion_counter].coords, object = "unit").player_number
+          self.buildings.pop(deletion_counter)
+          print("building converted")
+          continue
+      deletion_counter += 1
+  def updateCities(self) -> None:
+    global selected_object
+    #convert cities
+    deletion_counter = 0
+    while deletion_counter < len(self.cities):
+      if return_occupied(self.cities[deletion_counter].coords, object = "unit"):
+        #if there is a unit on the self.cities[deletion_counter]
+        if not return_occupied(self.cities[deletion_counter].coords, object = "unit") in self.units:
+          #if unit's player doesn't own the self.cities[deletion_counter]
+          Player.player_list[return_occupied(self.cities[deletion_counter].coords, object = "unit").player_number].cities.append(self.cities[deletion_counter])
+          Player.player_list[return_occupied(self.cities[deletion_counter].coords, object = "unit").player_number].cities[-1].player_number = return_occupied(self.cities[deletion_counter].coords, object = "unit").player_number
+          self.cities.pop(deletion_counter)
+          print("city converted")
+          #add city to player's list and remove from self
+          continue
+      deletion_counter += 1
+  def update(self) -> None:
+    global selected_object
+    #this is the update function for the player
     #display stuff here
     #display buildings
     self.display_buildings()
@@ -538,7 +539,7 @@ class Player:
       unit.turn_done = False
       unit.unit_reset()
     for city in self.cities:
-      if return_occupied(city.coords[0], city.coords[1], "unit") == False:
+      if return_occupied(city.coords, "unit") == False:
         #cities cannot cooldown if there's a person on it
         city.spawn_timer -= city.max_spawn_timer
         if city.spawn_timer < 0:
@@ -610,6 +611,12 @@ class Unit(Entity):
     self.action_range = [self.coords]
     self.action_range_placeholder = deepcopy(self.action_range)
     #moverange is a list of all the adjacent hexes that the unit can be moved to
+  def captureVillage(self) -> None:
+    if "village" in MAP[unit.coords[1]][unit.coords[0]].features:
+      #if unit is on a village
+      Player.player_list[self.player_number].cities.append(City(unit.coords, self.player_number))
+      MAP[unit.coords[1]][unit.coords[0]].features.remove("village")
+      print("village converted")
   def unit_reset(self) -> None:
     self.action = None
     self.action_index = 0
@@ -649,6 +656,11 @@ class Unit(Entity):
         print("successful move")
         self.coords = object.coords
         self.display_coords = coordConvert(self.coords, allocateSize = self.img_size)
+        #check if unit is on village
+        self.captureVillage()
+        for player in Player.player_list: #check if buildings/cities are stolen
+          player.updateBuildings()
+          player.updateCities()
         #the move is valid, so we move on to the next action
         self.next_action()
 
@@ -667,6 +679,8 @@ class Unit(Entity):
           print("animation created")
         #make the targeted_unit lose health
         object.health -= self.calculate_damage(object)
+        for player in Player.player_list: #remove dead units
+          player.updateUnits()
         self.next_action()
     elif self.action == "heal" and object == self:
       btn_pressed_this_frame = True
@@ -718,7 +732,7 @@ class Unit(Entity):
         self.action_range_placeholder = deepcopy(self.action_range)
 
         for movement_tile in self.action_range_placeholder:
-          if return_occupied(movement_tile[0], movement_tile[1], object = "unit") == False or Player.player_list[current_player].owns_unit(return_occupied(movement_tile[0], movement_tile[1], object = "unit")):
+          if return_occupied(movement_tile, object = "unit") == False or Player.player_list[current_player].owns_unit(return_occupied(movement_tile, object = "unit")):
           #if empty spot or player owns dude that is there
             if movement_tile[0] >= 0 and movement_tile[0] <= MAP_LENGTH and movement_tile[1] >= 0 and movement_tile[1] <= MAP_LENGTH:
               #if inside the map
@@ -730,7 +744,7 @@ class Unit(Entity):
       self.action_range_placeholder = deepcopy(self.action_range)
       self.action_range.clear()
       for movement_tile in self.action_range_placeholder:
-        if movement_tile not in self.action_range and return_occupied(movement_tile[0], movement_tile[1], object = "unit") == False:
+        if movement_tile not in self.action_range and return_occupied(movement_tile, object = "unit") == False:
           #remove duplicates and places occupied by other ppl
           if movement_tile[0] >= 0 and movement_tile[0] <= MAP_LENGTH and movement_tile[1] >= 0 and movement_tile[1] <= MAP_LENGTH:
             #if inside the map
@@ -751,7 +765,7 @@ class Unit(Entity):
       self.action_range.clear()
       for movement_tile in self.action_range_placeholder:
         if movement_tile not in self.action_range:
-          if return_occupied(movement_tile[0], movement_tile[1], object = "unit") and not Player.player_list[current_player].owns_unit(return_occupied(movement_tile[0], movement_tile[1], object = "unit")):
+          if return_occupied(movement_tile, object = "unit") and not Player.player_list[current_player].owns_unit(return_occupied(movement_tile, object = "unit")):
             self.action_range.append(movement_tile)
       #display hints to show the possible attack locations
     elif self.action == "heal":
@@ -766,7 +780,7 @@ class Unit(Entity):
       self.action_range.clear()
       for movement_tile in self.action_range_placeholder:
         if movement_tile not in self.action_range:
-          if return_occupied(movement_tile[0], movement_tile[1], object = "unit") and Player.player_list[current_player].owns_unit(return_occupied(movement_tile[0], movement_tile[1], object = "unit")):
+          if return_occupied(movement_tile, object = "unit") and Player.player_list[current_player].owns_unit(return_occupied(movement_tile, object = "unit")):
             self.action_range.append(movement_tile)
     for hint in self.action_range:
       hint_x, hint_y = coordConvert(hint)
@@ -955,22 +969,22 @@ class City(Entity):
       #spawn timer is full and can't make any more units (draw on top of green letters)
       text(text_display_size, str(self.spawn_timer) + "/" + str(self.max_spawn_timer), (255, 0, 0), x + 100, y + 37.5)
 
-def return_occupied(x: int, y: int, object: str) -> Any:
+def return_occupied(coords: Tuple[int, int], object: str) -> Any:
   #this returns the occupants of a hex
   #x and y are the coords of the hex
   #these are hex positions, not blit coords
   for player in Player.player_list:
     if object == "unit":
       for an_object in player.units:
-        if an_object.coords[0] == x and an_object.coords[1] == y:
-          return an_object
+        if an_object.coords == coords:
+          return an_object 
     elif object == "building":
       for an_object in player.buildings:
-        if an_object.coords[0] == x and an_object.coords[1] == y:
+        if an_object.coords == coords:
           return an_object
     elif object == "city":
       for a_city in player.cities:
-        if a_city.coords[0] == x and a_city.coords[1] == y:
+        if a_city.coords == coords:
           return a_city
   return False
 
@@ -1247,17 +1261,17 @@ def alternate_selection(object) -> Any:
   global selection_order, btn_pressed_this_frame
   for object_type in selection_order[selection_order.index(type(object))+1:]:
     if object_type == Unit:
-      if return_occupied(object.coords[0], object.coords[1], "unit"):
+      if return_occupied(object.coords, "unit"):
         btn_pressed_this_frame = True
-        return return_occupied(object.coords[0], object.coords[1], "unit")
+        return return_occupied(object.coords, "unit")
     elif object_type == Building:
-      if return_occupied(object.coords[0], object.coords[1], "building"):
+      if return_occupied(object.coords, "building"):
         btn_pressed_this_frame = True
-        return return_occupied(object.coords[0], object.coords[1], "building")
+        return return_occupied(object.coords, "building")
     elif object_type == City:
-      if return_occupied(object.coords[0], object.coords[1], "city"):
+      if return_occupied(object.coords, "city"):
         btn_pressed_this_frame = True
-        return return_occupied(object.coords[0], object.coords[1], "city")
+        return return_occupied(object.coords, "city")
     elif object_type == Location:
       btn_pressed_this_frame = True
       return MAP[object.coords[1]][object.coords[0]]
@@ -1415,11 +1429,11 @@ while True:
           screen.blit(foreign_building_select_img, (selected_object.display_coords[0] + offset_x, selected_object.display_coords[1] + offset_y))
       elif isinstance(selected_object, Location):
         screen.blit(location_img, (selected_object.display_coords[0] + offset_x, selected_object.display_coords[1] + offset_y))
-        if Player.player_list[current_player].owns_unit(return_occupied(selected_object.coords[0], selected_object.coords[1], "unit")):
+        if Player.player_list[current_player].owns_unit(return_occupied(selected_object.coords, "unit")):
           screen.blit(unit_location_img, (selected_object.display_coords[0] + offset_x, selected_object.display_coords[1] + offset_y))
-        elif Player.player_list[current_player].owns_building(return_occupied(selected_object.coords[0], selected_object.coords[1], "building")):
+        elif Player.player_list[current_player].owns_building(return_occupied(selected_object.coords, "building")):
           screen.blit(location_select_img, (selected_object.display_coords[0] + offset_x, selected_object.display_coords[1] + offset_y))
-        elif Player.player_list[current_player].owns_city(return_occupied(selected_object.coords[0], selected_object.coords[1], "city")):
+        elif Player.player_list[current_player].owns_city(return_occupied(selected_object.coords, "city")):
           screen.blit(location_select_img, (selected_object.display_coords[0] + offset_x, selected_object.display_coords[1] + offset_y))
 
     #create a rect area for selected, targeted, and location
@@ -1448,11 +1462,11 @@ while True:
       elif isinstance(selected_object, Location):
         selected_object.display(custom = (0, 100))
         screen.blit(location_img, (0, 100))
-        if Player.player_list[current_player].owns_unit(return_occupied(selected_object.coords[0], selected_object.coords[1], "unit")):
+        if Player.player_list[current_player].owns_unit(return_occupied(selected_object.coords, "unit")):
           screen.blit(unit_location_img, (0, 100))
-        elif Player.player_list[current_player].owns_building(return_occupied(selected_object.coords[0], selected_object.coords[1], "building")):
+        elif Player.player_list[current_player].owns_building(return_occupied(selected_object.coords, "building")):
           screen.blit(location_select_img, (0, 100))
-        elif Player.player_list[current_player].owns_city(return_occupied(selected_object.coords[0], selected_object.coords[1], "city")):
+        elif Player.player_list[current_player].owns_city(return_occupied(selected_object.coords, "city")):
           screen.blit(location_select_img, (0, 100))
         #capitalize the first letter of the location
         text(20, str(selected_object.terrain)[0].upper() + str(selected_object.terrain)[1:].lower(), (0, 0, 0), 44, 75, alignx = "center")
@@ -1518,7 +1532,7 @@ while True:
           display_action_sequence(choice[1], -1, 0, option_x + choice[0] * 50, mini = True)
     #unit upgrade building
     elif isinstance(selected_object, Building) and selected_object in Player.player_list[current_player].buildings:
-      if Player.player_list[current_player].owns_unit(return_occupied(selected_object.coords[0], selected_object.coords[1], object = "unit")):
+      if Player.player_list[current_player].owns_unit(return_occupied(selected_object.coords, object = "unit")):
         #upgrade a building if there's a dude on it
         if selected_object.upgraded_building in Player.player_list[current_player].available_upgraded_buildings:
           #if there is no upgraded building, it would be: if None in available buildings, so that would be false
@@ -1532,13 +1546,13 @@ while True:
           text(25, "Upgrade", (0, 0, 0), 100, 225, alignx = "center", aligny = "center")
       #build ships
       if "shipbuilding" in selected_object.abilities:
-        if return_occupied(selected_object.coords[0], selected_object.coords[1], "unit") and "float" not in return_occupied(selected_object.coords[0], selected_object.coords[1], "unit").abilities:
+        if return_occupied(selected_object.coords, "unit") and "float" not in return_occupied(selected_object.coords, "unit").abilities:
           #upgrade to ship if there is a dude is on it and the dude is not a ship
           for unit_type in enumerate(Player.player_list[current_player].available_naval_units):
             if button((Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2), Unit.unit_size * 2, Unit.unit_size * 2, 10, available = bool(Player.player_list[current_player].money >= unit_type[1][7][0] and Player.player_list[current_player].wood >= unit_type[1][7][1] and Player.player_list[current_player].metal >= unit_type[1][7][2] and Player.player_list[current_player].food >= unit_type[1][7][3])):
               print(unit_type[1][0] + " naval unit is spawned")
               Player.player_list[current_player].deduct_costs(unit_type[1][7])
-              old_unit_index = Player.player_list[current_player].units.index(return_occupied(selected_object.coords[0], selected_object.coords[1], "unit"))
+              old_unit_index = Player.player_list[current_player].units.index(return_occupied(selected_object.coords, "unit"))
               #create a new naval unit with the correctly altered stats using the old unit and the naval unit stats
               #replace old unit with new unit
               Player.player_list[current_player].units[old_unit_index] = upgrade_to_naval(Player.player_list[current_player].units[old_unit_index], Unit(unit_type[1], selected_object.coords, current_player))
@@ -1551,7 +1565,7 @@ while True:
             display_resources(unit_type[1][7], (Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack) + 75, option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2))
     #spawn new unit
     elif isinstance(selected_object, City) and selected_object in Player.player_list[current_player].cities:
-      if not return_occupied(selected_object.coords[0], selected_object.coords[1], "unit"):
+      if not return_occupied(selected_object.coords, "unit"):
       #if a city is selected and there's no dude on it to avoid spawning more than 1 dude
         for unit_type in enumerate(Player.player_list[current_player].available_units):
           if selected_object.spawn_timer < selected_object.max_spawn_timer:
@@ -1587,7 +1601,7 @@ while True:
       #build new building
       for building_type in enumerate(Player.player_list[current_player].available_buildings):
         #a_building_type is a list containing the stats of a building
-        if not bool(return_occupied(selected_object.coords[0], selected_object.coords[1], object = "building")) and Player.player_list[current_player].owns_unit(return_occupied(selected_object.coords[0], selected_object.coords[1], object = "unit")) and selected_object.terrain in building_type[1][4] and not bool(return_occupied(selected_object.coords[0], selected_object.coords[1], object = "city")):
+        if not bool(return_occupied(selected_object.coords, object = "building")) and Player.player_list[current_player].owns_unit(return_occupied(selected_object.coords, object = "unit")) and selected_object.terrain in building_type[1][4] and not bool(return_occupied(selected_object.coords, object = "city")):
           #if there is no other building there and u own a dude that is there and the terrain is in the building's terrain list and there is no city there
           if bool("cultivate" in building_type[1][5] and bool("crop" in selected_object.features or "harvested crop" in selected_object.features)) or bool(not "cultivate" in building_type[1][5]):
             #if the building is a cultivating building and it is on a crop/harvested crop or the building is not a cultivating building
@@ -1605,7 +1619,7 @@ while True:
       #do player action    
       for player_action in enumerate(Player.player_list[current_player].available_actions):
         #doing a player action
-        if Player.player_list[current_player].player_action_eligible(player_action[1], selected_object) and Player.player_list[current_player].owns_unit(return_occupied(selected_object.coords[0], selected_object.coords[1], object = "unit")) and not bool(return_occupied(selected_object.coords[0], selected_object.coords[1], object = "building")) and not bool(return_occupied(selected_object.coords[0], selected_object.coords[1], object = "city")):
+        if Player.player_list[current_player].player_action_eligible(player_action[1], selected_object) and Player.player_list[current_player].owns_unit(return_occupied(selected_object.coords, object = "unit")) and not bool(return_occupied(selected_object.coords, object = "building")) and not bool(return_occupied(selected_object.coords, object = "city")):
           #if you own a dude there and there is no building there (to avoid chopping forest where there is a lumber hut) and there is no city there
           #can't do player action when there's a building there
           if button(player_action_x + player_action[0] * player_action_size, player_action_y, player_action_size, player_action_size, 20, available = bool(Player.player_list[current_player].money >= Player.cost_dict[player_action[1]])):
