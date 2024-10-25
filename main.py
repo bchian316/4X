@@ -121,6 +121,8 @@ def get_vel(x1: int, y1: int, x2: int, y2: int, speed: int) -> Tuple[float, floa
 hex_size = 100
 offset_x = 250
 offset_y = 100
+tech_offset_x = 0
+tech_offset_y = 0
 
 def coordConvert(coords: Tuple[int, int], allocateSize: Optional[int] = None, returnCenter = True) -> Tuple[float, float]:
   #this function returns display coordinates from game location coordinates
@@ -308,7 +310,8 @@ class Player:
   extract_cost = 5
   grow_cost = 15
   fertilize_cost = 20
-  cost_dict = {"chop":chop_cost, "cultivate":cultivate_cost, "harvest":harvest_cost, "extract":extract_cost, "grow":grow_cost, "fertilize":fertilize_cost}
+  reap_cost = 5
+  cost_dict = {"chop":chop_cost, "cultivate":cultivate_cost, "harvest":harvest_cost, "extract":extract_cost, "grow":grow_cost, "fertilize":fertilize_cost, "reap":reap_cost}
   #player_action icons
   chop_img = pygame.image.load("player actions/chop.png").convert_alpha()
   cultivate_img = pygame.image.load("player actions/cultivate.png").convert_alpha()
@@ -316,7 +319,8 @@ class Player:
   extract_img = pygame.image.load("player actions/extract.png").convert_alpha()
   grow_img = pygame.image.load("player actions/grow.png").convert_alpha()
   fertilize_img = pygame.image.load("player actions/fertilize.png").convert_alpha()
-  img_dict = {"chop":chop_img, "cultivate":cultivate_img, "harvest":harvest_img, "extract":extract_img, "grow":grow_img, "fertilize":fertilize_img}
+  reap_img = pygame.image.load("player actions/reap.png").convert_alpha()
+  img_dict = {"chop":chop_img, "cultivate":cultivate_img, "harvest":harvest_img, "extract":extract_img, "grow":grow_img, "fertilize":fertilize_img, "reap":reap_img}
   def __init__(self, player_number: int):
     #player number determines the order the players play in starting from 0 not 1
     self.player_number = player_number
@@ -480,7 +484,10 @@ class Player:
       if location.terrain == "plains" or location.terrain == "forest":
         return True
     elif action == "fertilize":
-      if location.terrain != "ocean" and "crop" not in location.features:
+      if location.terrain != "ocean" and "crop" not in location.features and "harvested crop" not in location.features:
+        return True
+    elif action == "reap":
+      if "crop" in location.features or "harvested crop" in location.features:
         return True
     return False
   def player_action(self, action: str, location: Location, cost: int = 0) -> None:
@@ -514,6 +521,12 @@ class Player:
         location.img = Location.img_dict["dense forest"]
     elif action == "fertilize":
       location.features.append("crop")
+    elif action == "reap":
+      if "crop" in location.features:
+        location.features.remove("crop")
+      elif "harvested crop" in location.features:
+        location.features.remove("harvested crop")
+      self.food += 12
     self.money -= cost
   def turn_update_before(self) -> None:
     #this takes place at the beginning of turn, where buildings and cities produce resources
@@ -544,12 +557,11 @@ class Player:
         if city.spawn_timer < 0:
           city.spawn_timer = 0
   def deduct_costs(self, amounts: List[int]) -> None:
-    #amounts is a list containing [money, wood, metal, food]
+    #amounts is a list containing [wood, metal, food]
     #if deduct is True, subtract the resources, otherwise, add them
-    self.money -= amounts[0]
-    self.wood -= amounts [1]
-    self.metal -= amounts[2]
-    self.food -= amounts[3]
+    self.wood -= amounts[0]
+    self.metal -= amounts[1]
+    self.food -= amounts[2]
 
 class Entity:
   def __init__(self, player_number, coords, img):
@@ -674,7 +686,7 @@ class Unit(Entity):
         print("successful attack", type(object))
         #the attack is valid, so we move on to the next action
         for animation in range(self.calculate_damage(object)):
-          animation_list.append(damageAnimation(object.display_coords[0] + Unit.unit_size/2 + offset_x - damageAnimation.img_size/2, object.display_coords[1] + Unit.unit_size/2 + offset_y - damageAnimation.img_size/2))
+          Animation._list.append(damageAnimation(object.display_coords[0] + Unit.unit_size/2 + offset_x - damageAnimation.img_size/2, object.display_coords[1] + Unit.unit_size/2 + offset_y - damageAnimation.img_size/2))
           print("animation created")
         #make the targeted_unit lose health
         object.health -= self.calculate_damage(object)
@@ -891,13 +903,13 @@ class Building(Entity):
     self.production_timer += 1
     if self.production_timer == self.production_time:
       for _ in range(self.production[0]):
-        animation_list.append(resourceAnimation([0, 1, 0, 0], randint(round(self.display_coords[0] + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[0] + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_coords[1] + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[1] + offset_y + City.city_size/2 + resourceAnimation.animation_range/2)), SCREENLENGTH - 12.5, 87.5, 25, wood_resource_img))
+        Animation._list.append(resourceAnimation([0, 1, 0, 0], randint(round(self.display_coords[0] + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[0] + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_coords[1] + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[1] + offset_y + City.city_size/2 + resourceAnimation.animation_range/2)), SCREENLENGTH - 12.5, 87.5, 25, wood_resource_img))
       for _ in range(self.production[1]):
-        animation_list.append(resourceAnimation([0, 0, 1, 0], randint(round(self.display_coords[0] + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[0] + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_coords[1] + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[1] + offset_y + City.city_size/2 + resourceAnimation.animation_range/2)), SCREENLENGTH - 12.5, 122.5, 25, metal_resource_img))
+        Animation._list.append(resourceAnimation([0, 0, 1, 0], randint(round(self.display_coords[0] + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[0] + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_coords[1] + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[1] + offset_y + City.city_size/2 + resourceAnimation.animation_range/2)), SCREENLENGTH - 12.5, 122.5, 25, metal_resource_img))
       self.production_timer = 0
       if "cultivate" in self.abilities and "crop" in MAP[self.coords[1]][self.coords[0]].features:
         for _ in range(self.production[2]):
-          animation_list.append(resourceAnimation([0, 0, 0, 1], randint(round(self.display_coords[0] + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[0] + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_coords[1] + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[1] + offset_y + City.city_size/2 + resourceAnimation.animation_range/2)), SCREENLENGTH - 12.5, 137.5, 25, food_resource_img))
+          Animation._list.append(resourceAnimation([0, 0, 0, 1], randint(round(self.display_coords[0] + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[0] + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_coords[1] + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[1] + offset_y + City.city_size/2 + resourceAnimation.animation_range/2)), SCREENLENGTH - 12.5, 137.5, 25, food_resource_img))
         MAP[self.coords[1]][self.coords[0]].features.remove("crop")
         MAP[self.coords[1]][self.coords[0]].features.append("harvested crop")
   def display_stats(self, x: int, y: int, text_display_size: int = 20) -> None:
@@ -906,7 +918,7 @@ class Building(Entity):
     if self.production[0] > 0 or self.production[1] > 0 or self.production[2] > 0:
       screen.blit(production_frame, (x + 85, y - 33))
       text(text_display_size, "Produce ", (0, 0, 0), x + 135, y - 25, alignx = "center")
-      display_resources([0, self.production[0], self.production[1], self.production[2]], x + 125, y)
+      display_resources([0] + self.production, x + 125, y)
       screen.blit(Building.cooldown_stat_img, (x - 12.5, y + 75))
       text(text_display_size, str(self.production_timer + 1) + "/" + str(self.production_time) + " turns", (255, 0, 0), x + 12.5, y + 75)
       if self.production_timer + 1 == self.production_time:
@@ -931,8 +943,8 @@ class City(Entity):
   def __init__(self, coords: Tuple[int, int], player_number: int, level: int = 1):
     self.level = level
     super().__init__(player_number, coords, pygame.image.load("city/"+str(self.level)+".png").convert_alpha())
-    self.income = [self.level * 5, self.level, self.level, self.level]
-    self.cost = [self.level**2 * 5, self.level**2, self.level**2, self.level**2]
+    self.income = self.level * 5
+    self.cost = [self.level**2, self.level**2, self.level**2]
     #prevent unit spamming
     self.spawn_timer = 0
     self.max_spawn_timer = self.level * 10
@@ -940,33 +952,24 @@ class City(Entity):
     #this is where the city produces money
     #run this in the end_turn button clicked
     #add for loop for animation
-    for _ in range(self.income[0]):
-      animation_list.append(resourceAnimation([1, 0, 0, 0], randint(round(self.display_coords[0] + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[0] + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_coords[1] + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[1] + offset_y + City.city_size/2 + resourceAnimation.animation_range/2)), SCREENLENGTH - 12.5, 62.5, 25, money_resource_img))
-    #Player.player_list[current_player].money += 
-    for _ in range(self.income[1]):
-      animation_list.append(resourceAnimation([0, 1, 0, 0], randint(round(self.display_coords[0] + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[0] + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_coords[1] + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[1] + offset_y + City.city_size/2 + resourceAnimation.animation_range/2)), SCREENLENGTH - 12.5, 87.5, 25, wood_resource_img))
-    for _ in range(self.income[2]):
-      animation_list.append(resourceAnimation([0, 0, 1, 0], randint(round(self.display_coords[0] + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[0] + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_coords[1] + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[1] + offset_y + City.city_size/2 + resourceAnimation.animation_range/2)), SCREENLENGTH - 12.5, 112.5, 25, metal_resource_img))
-    for _ in range(self.income[3]):
-      animation_list.append(resourceAnimation([0, 0, 0, 1], randint(round(self.display_coords[0] + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[0] + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_coords[1] + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[1] + offset_y + City.city_size/2 + resourceAnimation.animation_range/2)), SCREENLENGTH - 12.5, 137.5, 25, food_resource_img))
+    for _ in range(self.income):
+      Animation._list.append(resourceAnimation([1, 0, 0, 0], randint(round(self.display_coords[0] + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[0] + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_coords[1] + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[1] + offset_y + City.city_size/2 + resourceAnimation.animation_range/2)), SCREENLENGTH - 12.5, 62.5, 25, money_resource_img))
   def upgrade(self) -> None:
     self.level += 1
-    self.income[0] += 5
-    self.income[1] += 1
-    self.income[2] += 1
-    self.income[3] += 1
-    Player.player_list[current_player].deduct_costs(self.cost)
-    self.cost = [self.level**2 * 5, self.level**2, self.level**2, self.level**2]
+    self.income += 5
+    Player.player_list[self.player_number].deduct_costs(self.cost)
+    self.cost = [self.level**2, self.level**2, self.level**2]
     self.max_spawn_timer += 10
     self.image = pygame.image.load("city/"+str(self.level)+".png").convert_alpha()
   def display_stats(self, x: int, y: int, text_display_size: int = 20) -> None:
     text(text_display_size, "Level " + str(self.level), (0, 0, 0), x + 75, y - 12.5, alignx= "center")
-    display_resources(self.income, x + 150, y - 25)
+    screen.blit(money_resource_img, (x + 75, y + 7.5))
+    text(20, str(self.income), money_color, x + 112.5, y + 15)
     screen.blit(City.cooldown_img, (x + 75, y + 37.5))
-    text(text_display_size, str(self.spawn_timer) + "/" + str(self.max_spawn_timer), (0, 255, 0), x + 100, y + 37.5)
+    text(text_display_size, str(self.spawn_timer) + "/" + str(self.max_spawn_timer), (0, 255, 0), x + 112.5, y + 42.5)
     if self.spawn_timer >= self.max_spawn_timer:
       #spawn timer is full and can't make any more units (draw on top of green letters)
-      text(text_display_size, str(self.spawn_timer) + "/" + str(self.max_spawn_timer), (255, 0, 0), x + 100, y + 37.5)
+      text(text_display_size, str(self.spawn_timer) + "/" + str(self.max_spawn_timer), (255, 0, 0), x + 112.5, y + 42.5)
 
 def return_occupied(coords: Tuple[int, int], object: str) -> Any:
   #this returns the occupants of a hex
@@ -1068,40 +1071,37 @@ class Tech:
 
 #unit stats
 #var = ["name", health, regen, attack, defense, range, movement, cost [money, wood, metal, food], timer, sequences, abilities]
-man = ["Man", 8, 3, 6, 2,  1, 2, [5, 1, 1, 1], 10, [["move", "attack"], ["heal"]], []]
+man = ["Man", 8, 3, 6, 2,  1, 2, [1, 1, 1], 10, [["move", "attack"], ["heal"]], []]
 #man can move 1 or attack
-swordsman = ["Swordsman", 12, 4, 9, 3, 1, 2, [10, 3, 5, 2], 15, [["move", "attack"], ["heal"]], []]
-spearman = ["Spearman", 10, 3, 8, 2, 1, 2, [5, 3, 4, 2], 12, [["move", "attack", "attack"], ["heal"]], []]
-axeman = ["Axeman", 12, 4, 25, 3, 1, 1, [5, 2, 5, 1], 13, [["move"], ["attack"], ["heal"]], []]
-shieldman = ["Shieldman", 15, 5, 6, 4, 1, 1, [5, 3, 10, 1], 10, [["move"], ["attack"]], []]
+swordsman = ["Swordsman", 12, 4, 9, 3, 1, 2, [3, 5, 2], 15, [["move", "attack"], ["heal"]], []]
+spearman = ["Spearman", 10, 3, 8, 2, 1, 2, [3, 4, 2], 12, [["move", "attack", "attack"], ["heal"]], []]
+axeman = ["Axeman", 12, 4, 25, 3, 1, 1, [2, 5, 1], 13, [["move"], ["attack"], ["heal"]], []]
+shieldman = ["Shieldman", 15, 5, 6, 4, 1, 1, [3, 10, 1], 10, [["move"], ["attack"]], []]
 #scout = ["Scout", Player.player_list[current_player].scouts, 3, 1, 5, 3, 1, 3, [3, 1, 0, 0], 3, [["move", "attack", "move"]], []]
 #scout can move 3, attack 3, and move 3
 #catapult = ["Catapult", Player.player_list[current_player].units, 5, 0, 10, 3, 3, 1, [3, 3, 0, 0], 8, [["move"], ["attack"]], []]
 #catapult can move 1 or attack 1
-archer = ["Archer", 8, 4, 7, 1, 2, 2, [5, 3, 1, 1], 14, [["attack", "move"], ["move", "heal"]], []]
-crossbowman = ["Crossbowman", 5, 2, 15, 1, 3, 2, [25, 10, 5, 3], 17, [["move", "attack"], ["attack", "move"], ["heal"]], []]
-medic = ["Medic", 10, 10, 0, 2, 1, 1, [10, 3, 1, 2], 8, [["move", "heal other"], ["move", "heal"]], []]
-rider = ["Rider", 9, 5, 7, 2, 1, 3, [10, 2, 1, 3], 12, [["move", "attack"], ["move", "heal"]], []]
-knight = ["Knight", 13, 6, 7, 1, 1, 3, [10, 2, 4, 6], 18, [["move", "attack"], ["attack", "move"], ["heal"]], []]
-elephant = ["Elephant", 18, 6, 15, 2, 1, 3, [20, 5, 3, 10], 30, [["move", "attack", "heal"]], []]
-ship = ["Ship", 10, 3, 1, 1, 0, 0, [15, 2, 2, 2], 0, [["move", "attack"], ["move", "heal", "move"]], ["float"]]
-steeler = ["Steeler", 20, 5, 1.5, 1.5, 0, 0, [20, 2, 8, 3], 0, [["move", "attack", "move"], ["heal"]], ["float"]]
+archer = ["Archer", 8, 4, 7, 1, 2, 2, [3, 1, 1], 14, [["attack", "move"], ["move", "heal"]], []]
+crossbowman = ["Crossbowman", 5, 2, 15, 1, 3, 2, [10, 5, 3], 17, [["move", "attack"], ["attack", "move"], ["heal"]], []]
+medic = ["Medic", 10, 10, 0, 2, 1, 1, [3, 1, 2], 8, [["move", "heal other"], ["move", "heal"]], []]
+rider = ["Rider", 9, 5, 7, 2, 1, 3, [2, 1, 3], 12, [["move", "attack"], ["move", "heal"]], []]
+knight = ["Knight", 13, 6, 7, 1, 1, 3, [2, 4, 6], 18, [["move", "attack"], ["attack", "move"], ["heal"]], []]
+elephant = ["Elephant", 18, 6, 15, 2, 1, 3, [5, 3, 10], 30, [["move", "attack", "heal"]], []]
+ship = ["Ship", 10, 3, 1, 1, 0, 0, [2, 2, 2], 0, [["move", "attack"], ["move", "heal", "move"]], ["float"]]
+steeler = ["Steeler", 20, 5, 1.5, 1.5, 0, 0, [2, 8, 3], 0, [["move", "attack", "move"], ["heal"]], ["float"]]
 
 #building stats
 #var = ["name", list, cost, production, production speed, possible terrain, abilities, upgrade into]
-lumber_hut = ["Lumber Hut", [10, 5, 3, 3], [3, 0, 0], 1, ["forest"], [], None]
-foundry = ["Foundry", [20, 4, 9, 6], [0, 20, 0], 2, None, [], None]
+lumber_hut = ["Lumber Hut", [5, 3, 3], [3, 0, 0], 1, ["forest"], [], None]
+foundry = ["Foundry", [4, 9, 6], [0, 20, 0], 2, None, [], None]
 #foundry is upgradable, so there's no terrain restrictions: u just build it on top of a mine
-mine = ["Mine", [20, 5, 5, 2], [0, 5, 0], 2, ["mountain"], [], foundry]
-shipyard = ["Shipyard", [25, 4, 3, 5], [0, 0, 0], 1, ["water"], ["shipbuilding"], None]
-port = ["Port", [30, 3, 3, 6], [20, 20, 20], 3, [], ["shipbuilding"], None]
-market = ["Market", [20, 8, 7, 6], [3, 3, 3], 2, ["water"], [], port]
-plantation = ["Plantation", [30, 8, 4, 6], [0, 0, 20], 1, None, ["cultivate"], None]
-farm = ["Farm", [15, 0, 1, 9], [0, 0, 10], 1, ["plains", "forest", "mountain", "water"], ["cultivate"], plantation]
+mine = ["Mine", [5, 5, 2], [0, 5, 0], 2, ["mountain"], [], foundry]
+shipyard = ["Shipyard", [4, 3, 5], [0, 0, 0], 1, ["water"], ["shipbuilding"], None]
+port = ["Port", [3, 3, 6], [20, 20, 20], 3, [], ["shipbuilding"], None]
+market = ["Market", [8, 7, 6], [3, 3, 3], 2, ["water"], [], port]
+plantation = ["Plantation", [8, 4, 6], [0, 0, 20], 1, None, ["cultivate"], None]
+farm = ["Farm", [0, 1, 9], [0, 0, 10], 1, ["plains", "forest", "mountain", "water"], ["cultivate"], plantation]
 
-
-tech_offset_x = 0
-tech_offset_y = 0
 #tech = ["Tech", price, x, y, preceding_tech, unit, building, upgraded building, player action, terrain, img]
 logging_img = pygame.image.load("tech/logging.png").convert_alpha()
 logging = ["Logging", 5, (50, 500), None, None, None, None, "chop", None, logging_img]
@@ -1157,11 +1157,13 @@ agriculture_img = pygame.image.load("tech/agriculture.png").convert_alpha()
 agriculture = ["Agriculture", 25, (750, 50), farming, None, None, plantation, None, None, agriculture_img]
 fertilization_img = pygame.image.load("tech/fertilization.png").convert_alpha()
 fertilization = ["Fertilization", 20, (825, 150), farming, None, None, None, "fertilize", None, fertilization_img]
-all_techs = [logging, trekking, archery, engineering, forestry, reforestation, medicine, climbing, smithery, sharpening, armoring, molding, mining, smelting, extraction, swimming, sailing, trade, economics, aquaculture, cultivation, riding, honor, taming, farming, agriculture, fertilization]
+overharvesting_img = pygame.image.load("tech/overharvesting.png").convert_alpha()
+overharvesting = ["Overharvesting", 20, (750, 500), cultivation, None, None, None, "reap", None, overharvesting_img]
+all_techs = [logging, trekking, archery, engineering, forestry, reforestation, medicine, climbing, smithery, sharpening, armoring, molding, mining, smelting, extraction, swimming, sailing, trade, economics, aquaculture, cultivation, riding, honor, taming, farming, agriculture, fertilization, overharvesting]
 
-animating = False
-animation_list = []
 class Animation:
+  animating = False
+  _list = []
   def __init__(self, x: int, y: int, img: pygame.Surface, img_size: int):
     self.x = x
     self.y = y
@@ -1206,9 +1208,9 @@ class attackAnimation(Animation):
     super().__init__(x, y, attackAnimation.size)
 def destroyAnimation() -> None:
   deletion_counter = 0
-  while deletion_counter < len(animation_list):
+  while deletion_counter < len(Animation._list):
     #building_type will be a list of a specific building type
-    sprite = animation_list[deletion_counter]
+    sprite = Animation._list[deletion_counter]
     if isinstance(sprite, resourceAnimation):
       if rect_collided(sprite.x, sprite.y, sprite.img_size, sprite.img_size, sprite.targetx, sprite.targety, sprite.targetsize, sprite.targetsize):
         for _ in enumerate(sprite.value):
@@ -1220,11 +1222,11 @@ def destroyAnimation() -> None:
             Player.player_list[current_player].metal += _[1]
           elif _[0] == 3:
             Player.player_list[current_player].food += _[1]
-        animation_list.pop(deletion_counter)
+        Animation._list.pop(deletion_counter)
         continue
     elif isinstance(sprite, damageAnimation):
       if sprite.distance_traveled >= damageAnimation.max_distance:
-        animation_list.pop(deletion_counter)
+        Animation._list.pop(deletion_counter)
         continue
     deletion_counter += 1
 
@@ -1363,9 +1365,9 @@ while True:
     mouse_pos = list(mouse_pos)
     #remember to reset this variable so buttons and selections aren't activated at the same time
     btn_pressed_this_frame = False
-    animating = False
-    if animation_list != []:
-      animating = True
+    Animation.animating = False
+    if Animation._list != []:
+      Animation.animating = True
     for event in pygame.event.get():
       if event.type == pygame.KEYDOWN:
         if event.key == pygame.K_x:
@@ -1374,7 +1376,7 @@ while True:
       if event.type == pygame.QUIT:
         pygame.quit()
         sys.exit()
-      if event.type == pygame.MOUSEBUTTONDOWN and not animating:
+      if event.type == pygame.MOUSEBUTTONDOWN and not Animation.animating:
         mouse_down = True
         if mouse_up == True:
           mouse_clicked = True
@@ -1491,7 +1493,8 @@ while True:
           pass
 
     if button(50, 0, 100, 50, 10):
-      selected_object = None
+      offset_x = 250
+      offset_y = 100
 
     if button(375, 0, 100, 50, 10):
       status = "tech tree"
@@ -1537,20 +1540,20 @@ while True:
         #upgrade a building if there's a dude on it
         if selected_object.upgraded_building in Player.player_list[current_player].available_upgraded_buildings:
           #if there is no upgraded building, it would be: if None in available buildings, so that would be false
-          if button(25, 200, Building.building_size*2, Building.building_size*2, 10, available = bool(Player.player_list[current_player].money >= selected_object.upgraded_building[1][0] and Player.player_list[current_player].wood >= selected_object.upgraded_building[1][1] and Player.player_list[current_player].metal >= selected_object.upgraded_building[1][2] and Player.player_list[current_player].food >= selected_object.upgraded_building[1][3])):
+          if button(25, 200, Building.building_size*2, Building.building_size*2, 10, available = bool(Player.player_list[current_player].wood >= selected_object.upgraded_building[1][0] and Player.player_list[current_player].metal >= selected_object.upgraded_building[1][1] and Player.player_list[current_player].food >= selected_object.upgraded_building[1][2])):
             selected_object.upgrade()
             Player.player_list[current_player].deduct_costs(selected_object.cost)
           if selected_object.upgraded_building != None:
             screen.blit(Building.img_dict[selected_object.upgraded_building[0]], (37.5, 262.5))
             text(20, selected_object.upgraded_building[0], (0, 0, 0), 75, 250, alignx = "center", aligny = "center")
-            display_resources(selected_object.upgraded_building[1], 150, 237.5)
+            display_resources([0] + selected_object.upgraded_building[1], 150, 237.5)
           text(25, "Upgrade", (0, 0, 0), 100, 225, alignx = "center", aligny = "center")
       #build ships
       if "shipbuilding" in selected_object.abilities:
         if return_occupied(selected_object.coords, "unit") and "float" not in return_occupied(selected_object.coords, "unit").abilities:
           #upgrade to ship if there is a dude is on it and the dude is not a ship
           for unit_type in enumerate(Player.player_list[current_player].available_naval_units):
-            if button((Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2), Unit.unit_size * 2, Unit.unit_size * 2, 10, available = bool(Player.player_list[current_player].money >= unit_type[1][7][0] and Player.player_list[current_player].wood >= unit_type[1][7][1] and Player.player_list[current_player].metal >= unit_type[1][7][2] and Player.player_list[current_player].food >= unit_type[1][7][3])):
+            if button((Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2), Unit.unit_size * 2, Unit.unit_size * 2, 10, available = bool(Player.player_list[current_player].wood >= unit_type[1][7][0] and Player.player_list[current_player].metal >= unit_type[1][7][1] and Player.player_list[current_player].food >= unit_type[1][7][2])):
               print(unit_type[1][0] + " naval unit is spawned")
               Player.player_list[current_player].deduct_costs(unit_type[1][7])
               old_unit_index = Player.player_list[current_player].units.index(return_occupied(selected_object.coords, "unit"))
@@ -1563,14 +1566,14 @@ while True:
               print("turn done")
             screen.blit(Unit.img_dict[unit_type[1][0]], (0, option_x + 25 + unit_type[0] * 50))
             text(20, unit_type[1][0], (0, 0, 0), (Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2))
-            display_resources(unit_type[1][7], (Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack) + 75, option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2))
+            display_resources([0] + unit_type[1][7], (Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack) + 75, option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2) + 12.5)
     #spawn new unit
     elif isinstance(selected_object, City) and selected_object in Player.player_list[current_player].cities:
       if not return_occupied(selected_object.coords, "unit"):
       #if a city is selected and there's no dude on it to avoid spawning more than 1 dude
         for unit_type in enumerate(Player.player_list[current_player].available_units):
           if selected_object.spawn_timer < selected_object.max_spawn_timer:
-            if button((Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2), Unit.unit_size * 2, Unit.unit_size * 2, 10, available = bool(Player.player_list[current_player].money >= unit_type[1][7][0] and Player.player_list[current_player].wood >= unit_type[1][7][1] and Player.player_list[current_player].metal >= unit_type[1][7][2] and Player.player_list[current_player].food >= unit_type[1][7][3])):
+            if button((Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2), Unit.unit_size * 2, Unit.unit_size * 2, 10, available = bool(Player.player_list[current_player].wood >= unit_type[1][7][0] and Player.player_list[current_player].metal >= unit_type[1][7][1] and Player.player_list[current_player].food >= unit_type[1][7][2])):
               print(unit_type[1][0] + " unit is spawned")
               Player.player_list[current_player].deduct_costs(unit_type[1][7])
               #add spawn_cooldown to city
@@ -1583,14 +1586,14 @@ while True:
             pygame.draw.rect(screen, (255, 0, 0), ((Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2), Unit.unit_size * 2, Unit.unit_size * 2), width = 0, border_radius = 10)
           screen.blit(Unit.img_dict[unit_type[1][0]], ((Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2) + 25))
           text(20, unit_type[1][0], (0, 0, 0), (Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2))
-          display_resources(unit_type[1][7], (Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack) + 75, option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2))
+          display_resources([0] + unit_type[1][7], (Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack) + 75, option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2) + 12.5)
       #upgrade button
       if selected_object.level < City.max_level:
         if button(25, 200, City.city_size*2, City.city_size*2, 10, available = bool(Player.player_list[current_player].money >= selected_object.cost[0] and Player.player_list[current_player].wood >= selected_object.cost[1] and Player.player_list[current_player].metal >= selected_object.cost[2] and Player.player_list[current_player].food >= selected_object.cost[2]), acolor = (224, 224, 34), hcolor = (140, 140, 3)):
           selected_object.upgrade()
         screen.blit(selected_object.image, (37.5, 250))
         screen.blit(City.upgrade_img, (37.5, 250))
-        display_resources(selected_object.cost, 150, 237.5)
+        display_resources([0] + selected_object.cost, 150, 250)
         text(25, "Upgrade", (0, 0, 0), 100, 225, alignx = "center", aligny = "center")
       else:
         text(25, "Max Level", (0, 0, 0), 75, 175, alignx = "center", aligny = "center")
@@ -1606,7 +1609,7 @@ while True:
           #if there is no other building there and u own a dude that is there and the terrain is in the building's terrain list and there is no city there
           if bool("cultivate" in building_type[1][5] and bool("crop" in selected_object.features or "harvested crop" in selected_object.features)) or bool(not "cultivate" in building_type[1][5]):
             #if the building is a cultivating building and it is on a crop/harvested crop or the building is not a cultivating building
-            if button(SCREENLENGTH - Building.building_size*2, 200 + building_type[0] * (Building.building_size*2), Building.building_size*2, Building.building_size*2, 10, stroke = 0, available = bool(Player.player_list[current_player].money >= building_type[1][1][0] and Player.player_list[current_player].wood >= building_type[1][1][1] and Player.player_list[current_player].metal >= building_type[1][1][2] and Player.player_list[current_player].food >= building_type[1][1][3])):
+            if button(SCREENLENGTH - Building.building_size*2, 200 + building_type[0] * (Building.building_size*2), Building.building_size*2, Building.building_size*2, 10, stroke = 0, available = bool(Player.player_list[current_player].wood >= building_type[1][1][0] and Player.player_list[current_player].metal >= building_type[1][1][1] and Player.player_list[current_player].food >= building_type[1][1][2])):
               #build building and subtract resources
               print(building_type[1][0] + " is built")
               Player.player_list[current_player].deduct_costs(building_type[1][1])
@@ -1615,7 +1618,7 @@ while True:
             screen.blit(Building.img_dict[building_type[1][0]], (SCREENLENGTH - Building.building_size*2 + 25, 250 + building_type[0] * (Building.building_size*2)))
             text(20, building_type[1][0], (0, 0, 0), SCREENLENGTH - 150, 200 + building_type[0] * (Building.building_size*2))
             text(20, "Terrain: " + ", ".join(building_type[1][4]), (0, 0, 0), SCREENLENGTH - 150, 210 + building_type[0] * (Building.building_size*2))
-            display_resources(building_type[1][1], SCREENLENGTH - 25, 250 + building_type[0] * (Building.building_size*2))
+            display_resources([0] + building_type[1][1], SCREENLENGTH - 25, 250 + building_type[0] * (Building.building_size*2))
 
       #do player action    
       for player_action in enumerate(Player.player_list[current_player].available_actions):
@@ -1626,8 +1629,8 @@ while True:
           if button(player_action_x + player_action[0] * player_action_size, player_action_y, player_action_size, player_action_size, 20, available = bool(Player.player_list[current_player].money >= Player.cost_dict[player_action[1]])):
             Player.player_list[current_player].player_action(player_action[1], selected_object, Player.cost_dict[player_action[1]])
           screen.blit(Player.img_dict[player_action[1]], (player_action_x + player_action[0] * player_action_size, player_action_y))
-          text(25, player_action[1], (0, 0, 0), (player_action_x + player_action_size/2) + (player_action[0] * player_action_size), player_action_y - 10, alignx = "center")
-          text(50, str(Player.cost_dict[player_action[1]]).capitalize(), money_color, (player_action_x + player_action_size/2) + (player_action[0] * player_action_size), player_action_y + 25, alignx = "center")          
+          text(25, player_action[1].capitalize(), (0, 0, 0), (player_action_x + player_action_size/2) + (player_action[0] * player_action_size), player_action_y - 10, alignx = "center")
+          text(50, str(Player.cost_dict[player_action[1]]), money_color, (player_action_x + player_action_size/2) + (player_action[0] * player_action_size), player_action_y + 25, alignx = "center")          
     #keep all buttons on top of this line
     if mouse_clicked:
       #selecting the selected_object
@@ -1680,7 +1683,7 @@ while True:
                     selected_object = alternate_selection(selected_object)
 
     destroyAnimation()
-    for animation in animation_list:
+    for animation in Animation._list:
       animation.update()
     if mouse_clicked:
       mouse_clicked = False
