@@ -8,16 +8,6 @@ with it, fps < 10
 without is, fps > 30
 '''
 
-#THINGS ARE NOT BEING DISPLAYED BECAUSE CODE CANNOT EXIT THE CHOOSE ACTION SEQUENCE METHOD for some reason
-#self.movement_range in self.do_action has some really weird values
-#eg [-28, -7], [-6, -28]
-#too many loops or something, the loop is running too many times and values are too high, there are coordinates that do not exist in self.movement_range
-#Answer: i am adding values to self.movement_range while I am using it as an iterable in a for loop, so the list will keep having values added to it, and the for loop will never end
-#MUST MAKE A NEW LIST
-#ANSWER: when i am creating self.movement_range_placeholder, I copied self.movement_range, but list variables only contain references to lists, so I have to use copy.deepcopy instead to copy the list
-
-#problem: not all tiles can be selected as location - only tiles in the first 2 rows can be selected
-#answer: i was using row as the iterable, not row[1] because i was using enumerate
 
 '''
 TODO:
@@ -29,7 +19,7 @@ ADVANCED (save for later):
 '''
 import pygame, sys
 pygame.init()
-from math import sqrt, degrees, atan
+from math import sqrt
 from copy import deepcopy
 from random import randint
 from typing import *
@@ -153,7 +143,8 @@ class Location:
   water_img = pygame.image.load("terrain/water.png").convert_alpha()
   ocean_img = pygame.image.load("terrain/ocean.png").convert_alpha()
   mountain_img = pygame.image.load("terrain/mountain.png").convert_alpha()
-  img_dict = {"plains":plains_img, "forest":forest_img, "water":water_img, "ocean":ocean_img, "mountain":mountain_img}
+  dense_forest_img = pygame.image.load("terrain/dense forest.png").convert_alpha()
+  img_dict = {"plains":plains_img, "forest":forest_img, "water":water_img, "ocean":ocean_img, "mountain":mountain_img, "dense forest":dense_forest_img}
   crop_img = pygame.image.load("terrain/crop.png").convert_alpha()
   harvested_crop_img = pygame.image.load("terrain/harvested crop.png").convert_alpha()
   seaweed_img = pygame.image.load("terrain/seaweed.png").convert_alpha()
@@ -194,12 +185,12 @@ class Location:
 #it will show the terrain of every tile in the game
 #MAP = [4 items, 5 items, 6, 7, 6, 5, 4] because there is a side length of 4
 TERRAIN = [["plains", "plains", "mountain", "plains", "forest", "", "", "", ""], 
-       ["mountain", "plains", "plains", "plains", "forest", "forest", "", "", ""], 
-       ["plains", "plains", "mountain", "plains", "plains", "mountain", "forest", "", ""], 
-       ["plains", "plains", "plains", "plains", "mountain", "forest", "forest", "forest", ""], 
-       ["mountain", "mountain", "mountain", "mountain", "plains", "forest", "mountain", "mountain", "forest"], 
-       ["", "plains", "mountain", "plains", "plains", "plains", "forest", "forest", "forest"],
-       ["", "", "plains", "plains", "plains", "mountain", "forest", "forest", "forest"],
+       ["mountain", "plains", "plains", "plains", "forest", "dense forest", "", "", ""], 
+       ["dense forest", "forest", "mountain", "plains", "plains", "mountain", "forest", "", ""], 
+       ["plains", "forest", "plains", "plains", "mountain", "forest", "dense forest", "forest", ""], 
+       ["mountain", "mountain", "mountain", "mountain", "plains", "forest", "mountain", "mountain", "dense forest"], 
+       ["", "plains", "mountain", "plains", "plains", "plains", "forest", "forest", "dense forest"],
+       ["", "", "plains", "plains", "plains", "mountain", "forest", "dense forest", "dense forest"],
        ["", "", "", "water", "water", "water", "water", "water", "water"], 
        ["", "", "", "", "ocean", "ocean", "ocean", "ocean", "ocean"]]
 #this is the side length of the map
@@ -474,7 +465,7 @@ class Player:
     return False
   def player_action_eligible(self, action, location) -> bool:
     if action == "chop":
-      if location.terrain == "forest":
+      if location.terrain == "forest" or location.terrain == "dense forest":
         return True
     elif action == "cultivate":
       if "crop" in location.features:
@@ -486,7 +477,7 @@ class Player:
       if "ore" in location.features:
         return True
     elif action == "grow":
-      if location.terrain == "plains":
+      if location.terrain == "plains" or location.terrain == "forest":
         return True
     elif action == "fertilize":
       if location.terrain != "ocean" and "crop" not in location.features:
@@ -497,8 +488,12 @@ class Player:
       #get wood by cutting down forest into plains
       #location must be at forest tile
       self.wood += 5
-      location.terrain = "plains"
-      location.img = Location.img_dict["plains"]
+      if location.terrain == "forest":
+        location.terrain = "plains"
+        location.img = Location.img_dict["plains"]
+      elif location.terrain == "dense forest":
+        location.terrain = "forest"
+        location.img = Location.img_dict["forest"]
     elif action == "cultivate":
       self.food += 3
       location.features.remove("crop")
@@ -511,8 +506,12 @@ class Player:
       location.features.remove("ore")
     elif action == "grow":
       #grow forest from plains
-      location.terrain = "forest"
-      location.img = Location.img_dict["forest"]
+      if location.terrain == "plains":
+        location.terrain = "forest"
+        location.img = Location.img_dict["forest"]
+      if location.terrain == "forest":
+        location.terrain = "dense forest"
+        location.img = Location.img_dict["dense forest"]
     elif action == "fertilize":
       location.features.append("crop")
     self.money -= cost
@@ -1072,8 +1071,8 @@ class Tech:
 man = ["Man", 8, 3, 6, 2,  1, 2, [5, 1, 1, 1], 10, [["move", "attack"], ["heal"]], []]
 #man can move 1 or attack
 swordsman = ["Swordsman", 12, 4, 9, 3, 1, 2, [10, 3, 5, 2], 15, [["move", "attack"], ["heal"]], []]
-spearman = ["Spearman", 10, 3, 8, 2, 2, 2, [5, 3, 4, 2], 12, [["move", "attack", "attack"], ["heal"]], []]
-axeman = ["Axeman", 12, 4, 20, 3, 1, 1, [5, 2, 5, 1], 13, [["move"], ["attack"], ["heal"]], []]
+spearman = ["Spearman", 10, 3, 8, 2, 1, 2, [5, 3, 4, 2], 12, [["move", "attack", "attack"], ["heal"]], []]
+axeman = ["Axeman", 12, 4, 25, 3, 1, 1, [5, 2, 5, 1], 13, [["move"], ["attack"], ["heal"]], []]
 shieldman = ["Shieldman", 15, 5, 6, 4, 1, 1, [5, 3, 10, 1], 10, [["move"], ["attack"]], []]
 #scout = ["Scout", Player.player_list[current_player].scouts, 3, 1, 5, 3, 1, 3, [3, 1, 0, 0], 3, [["move", "attack", "move"]], []]
 #scout can move 3, attack 3, and move 3
@@ -1106,6 +1105,8 @@ tech_offset_y = 0
 #tech = ["Tech", price, x, y, preceding_tech, unit, building, upgraded building, player action, terrain, img]
 logging_img = pygame.image.load("tech/logging.png").convert_alpha()
 logging = ["Logging", 5, (50, 500), None, None, None, None, "chop", None, logging_img]
+trekking_img = pygame.image.load("tech/trekking.png").convert_alpha()
+trekking = ["Trekking", 25, (0, 250), logging, None, None, None, None, "dense forest", trekking_img]
 archery_img = pygame.image.load("tech/archery.png").convert_alpha()
 archery = ["Archery", 10, (100, 300), logging, archer, None, None, None, None, archery_img]
 engineering_img = pygame.image.load("tech/engineering.png").convert_alpha()
@@ -1113,7 +1114,7 @@ engineering = ["Engineering", 20, (0, 100), archery, crossbowman, None, None, No
 forestry_img = pygame.image.load("tech/forestry.png").convert_alpha()
 forestry = ["Forestry", 10, (250, 300), logging, None, lumber_hut, None, None, None, forestry_img]
 reforestation_img = pygame.image.load("tech/reforestation.png").convert_alpha()
-reforestation = ["Reforestation", 20, (250, 50), forestry, None, None, None, "grow", None, reforestation_img]
+reforestation = ["Reforestation", 20, (100, 0), trekking, None, None, None, "grow", None, reforestation_img]
 medicine_img = pygame.image.load("tech/medicine.png").convert_alpha()
 medicine = ["Medicine", 20, (150, 100), forestry, medic, None, None, None, None, medicine_img]
 climbing_img = pygame.image.load("tech/climbing.png").convert_alpha()
@@ -1156,7 +1157,7 @@ agriculture_img = pygame.image.load("tech/agriculture.png").convert_alpha()
 agriculture = ["Agriculture", 25, (750, 50), farming, None, None, plantation, None, None, agriculture_img]
 fertilization_img = pygame.image.load("tech/fertilization.png").convert_alpha()
 fertilization = ["Fertilization", 20, (825, 150), farming, None, None, None, "fertilize", None, fertilization_img]
-all_techs = [logging, archery, engineering, forestry, reforestation, medicine, climbing, smithery, sharpening, armoring, molding, mining, smelting, extraction, swimming, sailing, trade, economics, aquaculture, cultivation, riding, honor, taming, farming, agriculture, fertilization]
+all_techs = [logging, trekking, archery, engineering, forestry, reforestation, medicine, climbing, smithery, sharpening, armoring, molding, mining, smelting, extraction, swimming, sailing, trade, economics, aquaculture, cultivation, riding, honor, taming, farming, agriculture, fertilization]
 
 animating = False
 animation_list = []
