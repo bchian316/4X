@@ -2,7 +2,11 @@
 #maybe that'll help
 
 '''REMINDER:
-WHENEVER CALLING unit.display_coords[0] or unit.display_coords[1], YOU MUST ADD offset_x or offset_y TO GET THE TRUE BLIT COORDS
+WHENEVER THE PLAYER DOES SOMETHING THAT CAN CHANGE A UNIT's ACTION RANGE, MAKE SURE YOU RESET THE UNIT
+SO THE PLAYER HAS TO RECLICK ON THE SAME UNIT
+- THEREFORE, YOU RESET THE ACTION_RANGE SO THE UNIT CAN GET THE UPDATED ACTION_RANGE INSTEAD OF THE
+ACTION_RANGE STAYING THE SAME
+WHENEVER CALLING unit.display_coords, YOU MUST ADD offset_x or offset_y TO GET THE TRUE BLIT COORDS
 display_map_hex takes up a lot of processing power
 with it, fps < 10
 without is, fps > 30
@@ -120,7 +124,7 @@ def get_vel(x1: int, y1: int, x2: int, y2: int, speed: int) -> Tuple[float, floa
 
 hex_size = 100
 offset_x = 250
-offset_y = 100
+offset_y = 0
 tech_offset_x = 0
 tech_offset_y = 0
 
@@ -186,23 +190,27 @@ class Location:
 #the map will be the constant variable that revolves around all the players
 #it will show the terrain of every tile in the game
 #MAP = [4 items, 5 items, 6, 7, 6, 5, 4] because there is a side length of 4
-TERRAIN = [["plains", "plains", "mountain", "plains", "forest", "", "", "", ""], 
-       ["mountain", "plains", "plains", "plains", "forest", "dense forest", "", "", ""], 
-       ["dense forest", "forest", "mountain", "plains", "plains", "mountain", "forest", "", ""], 
-       ["plains", "forest", "plains", "plains", "mountain", "forest", "dense forest", "forest", ""], 
-       ["mountain", "mountain", "mountain", "mountain", "plains", "forest", "mountain", "mountain", "dense forest"], 
-       ["", "plains", "mountain", "plains", "plains", "plains", "forest", "forest", "dense forest"],
-       ["", "", "plains", "plains", "plains", "mountain", "forest", "dense forest", "dense forest"],
-       ["", "", "", "water", "water", "water", "water", "water", "water"], 
-       ["", "", "", "", "ocean", "ocean", "ocean", "ocean", "ocean"]]
+TERRAIN = [["mountain", "mountain", "mountain", "plains", "water", "water", "ocean", "", "", "", ""], 
+       ["mountain", "mountain", "mountain", "forest", "plains", "water", "ocean", "ocean", "", "", "", "", ""], 
+       ["forest", "mountain", "dense forest", "mountain", "water", "ocean", "ocean", "ocean", "water", "", "", "", ""], 
+       ["plains", "mountain", "dense forest", "water", "water", "forest", "plains", "mountain", "ocean", "ocean", "", "", ""], 
+       ["water", "forest", "plains", "dense forest", "water", "mountain", "plains", "water", "mountain", "forest", "forest", "", ""], 
+       ["dense forest", "water", "plains", "mountain", "plains", "plains", "mountain", "water", "plains", "forest", "plains", "plains", ""],
+       ["dense forest", "forest", "mountain", "mountain", "mountain", "mountain", "water", "plains", "mountain", "plains", "forest", "plains", "plains"],
+       ["", "forest", "mountain", "water", "water", "mountain", "plains", "ocean", "plains", "water", "dense forest", "dense forest", "dense forest"], 
+       ["", "", "mountain", "ocean", "mountain", "ocean", "mountain", "forest", "mountain", "mountain", "dense forest", "dense forest", "dense forest"],
+       ["", "", "", "mountain", "water", "ocean", "plains", "plains", "water", "plains", "dense forest", "dense forest", "dense forest"], 
+       ["", "", "", "", "mountain", "mountain", "mountain", "mountain", "plains", "plains", "dense forest", "dense forest", "plains"],
+       ["", "", "", "", "", "mountain", "mountain", "water", "ocean", "plains", "plains", "dense forest", "dense forest"],
+       ["", "", "", "", "", "", "ocean", "ocean", "ocean", "ocean", "ocean", "ocean", "ocean"]]
 #this is the side length of the map
 MAP_LENGTH = len(TERRAIN)-1
 #useless for now
-CROP = [(5, 10), (5, 2), (6, 2), (3, 3)]
+CROP = [(6, 2), (5, 3), (6, 3), (2, 4), (5, 6) ,(12, 6), (6, 7), (7, 8), (9, 11), (10, 11), (8, 7)]
 HARVESTED_CROP = []
-SEAWEED = [(6, 7), (7, 7), (8, 7), (6, 8), (7, 8)]
-ORE = [(2, 3), (3, 5), (5, 6), (4, 3), (6, 4), (7, 4)]
-VILLAGES = [(0, 2), (1, 0), (2, 4), (5, 1), (5, 7), (6, 6), (3, 7)]
+SEAWEED = [(7, 17), (9, 12), (10, 12), (7, 1), (8, 2), (4, 3), (4, 4), (7, 4), (1, 5), (3, 7), (7, 7), (5, 8), (8, 4)]
+ORE = [(7, 2), (0, 3), (5, 4), (5, 5), (6, 6), (11, 6), (7, 9), (9, 9), (10, 9), (7, 11), (9, 11), (12, 12)]
+VILLAGES = [(8, 4), (2, 5), (8, 7), (3, 0), (4, 8), (12, 10), (2, 2)]
 MAP = []
 #configure map
 for row in enumerate(TERRAIN):
@@ -255,14 +263,6 @@ def display_map_hex(map: List[List[Location]]) -> None:
       #the first item in the list is the first tile, the second item is the second tile, etc.
       #display_coords[0] and display_coords[1] will be the screen blit coords of the tile
       tile.display()
-      
-#displays the map in hexagonal form
-#MAP[0][0] would be plains
-#MAP[0][1] wouild be forest
-#MAP[0][2] would be desert
-#MAP[0][3] would be plains
-#MAP[1][0] would be ocean
-#make a list for buildings you can build on the map
 
 def return_Adjacent_hex(coords: Tuple[int, int]) -> List[Tuple[int, int]]:
   #returns a list of all the adjacent hexes based on one hex
@@ -325,10 +325,10 @@ class Player:
     #player number determines the order the players play in starting from 0 not 1
     self.player_number = player_number
     self.color = (randint(0, 255), randint(0, 255), randint(0, 255))
-    self.money = 100000
-    self.wood = 100000
-    self.metal = 100000
-    self.food = 100000
+    self.money = 0 #0
+    self.wood = 0 #0
+    self.metal = 0 #0
+    self.food = 0 #0
     self.units = []
     self.buildings = []
     self.cities = []
@@ -440,33 +440,12 @@ class Player:
     #display cities
     self.display_cities()
     #display units
-    for unit in self.units:
+    '''for unit in self.units:
       #reset action ranges so they dont stack (happens every frame)
-      unit.action_range = [(unit.coords[0], unit.coords[1])]
+      unit.action_range = [(unit.coords[0], unit.coords[1])]'''
     self.display_units()
     #update everything:
     #add the money per turn, resources per turn
-  def owns_unit(self, unit) -> bool:
-    for _unit in self.units:
-        if unit == _unit:
-          return True
-    return False
-  def owns_building(self, building) -> bool:
-    for _building in self.buildings:
-      if building == _building:
-        return True
-    return False
-  def owns_city(self, city) -> bool:
-    for _city in self.cities:
-      if city == _city:
-        return True
-    return False
-  def owns_tech(self, tech_name) -> bool:
-    #tech_name should be a string, the name of the tech
-    for _tech in self.techs:
-      if _tech.name == tech_name:
-        return True
-    return False
   def player_action_eligible(self, action, location) -> bool:
     if action == "chop":
       if location.terrain == "forest" or location.terrain == "dense forest":
@@ -509,7 +488,7 @@ class Player:
       self.money += 10
       location.features.remove("seaweed")
     elif action == "extract":
-      self.money += 20
+      self.metal += 10
       location.features.remove("ore")
     elif action == "grow":
       #grow forest from plains
@@ -564,7 +543,7 @@ class Player:
     self.food -= amounts[2]
 
 class Entity:
-  def __init__(self, player_number, coords, img):
+  def __init__(self, player_number: int, coords: Tuple[int, int], img: pygame.Surface):
     #Entities are things owned by players
     self.player_number = player_number
     self.coords = coords
@@ -623,20 +602,21 @@ class Unit(Entity):
     self.action_range_placeholder = deepcopy(self.action_range)
     #moverange is a list of all the adjacent hexes that the unit can be moved to
   def captureVillage(self) -> None:
-    if "village" in MAP[unit.coords[1]][unit.coords[0]].features:
+    if "village" in MAP[self.coords[1]][self.coords[0]].features:
       #if unit is on a village
-      Player.player_list[self.player_number].cities.append(City(unit.coords, self.player_number))
-      MAP[unit.coords[1]][unit.coords[0]].features.remove("village")
+      Player.player_list[self.player_number].cities.append(City(self.coords, self.player_number))
+      MAP[self.coords[1]][self.coords[0]].features.remove("village")
       print("village converted")
-  def unit_reset(self) -> None:
+  def unit_reset(self) -> None: #always reset self.action_range to [self.coords]
     self.action = None
     self.action_index = 0
     self.action_sequence = []
     self.action_range = [self.coords]
   def next_action(self) -> None:
-    global selected_object, selected_object
+    global selected_object
     try:
-      self.action = self.action_sequence[self.action_index + 1]
+      self.action = self.action_sequence[self.action_index + 1] #if there is an error here, jump to the except
+      self.calculate_action_range()
       self.action_index += 1
       selected_object = self
     except IndexError:
@@ -655,9 +635,9 @@ class Unit(Entity):
     return round(damage)
   def do_action(self, object: Any) -> None:
     global btn_pressed_this_frame
-    #calculate the ranges in display_hints, and actually do the action here
+    #calculate the ranges in calculate_action_range, and actually do the action here
     global selected_object, selected_object
-    if self.action == "move" and object != None:
+    if self.action == "move" and type(object) == Location:
       #action is a movement order
       #self.action is the number of maximum hexes to move
 
@@ -665,7 +645,7 @@ class Unit(Entity):
         btn_pressed_this_frame = True
         #location is within movement range and is not occupied
         print("successful move")
-        self.coords = object.coords
+        self.coords = deepcopy(object.coords)
         self.display_coords = coordConvert(self.coords, allocateSize = self.img_size)
         #check if unit is on village
         self.captureVillage()
@@ -675,7 +655,7 @@ class Unit(Entity):
         #the move is valid, so we move on to the next action
         self.next_action()
 
-    elif self.action == "attack" and object != None and not Player.player_list[current_player].owns_unit(object):
+    elif self.action == "attack" and type(object) == Unit and object not in Player.player_list[current_player].units:
       # if the action is an attack and the targeted unit exists and the targeted unit does not belong to the current player (no friendly fire)
       #action is a attack order
       #self.action is the number of maximum hexes to move
@@ -703,7 +683,7 @@ class Unit(Entity):
         self.health = self.max_health
       print("successful heal")
       self.next_action()
-    elif self.action == "heal other" and Player.player_list[current_player].owns_unit(object):
+    elif self.action == "heal other" and type(object) == Unit and object in Player.player_list[current_player].units:
       btn_pressed_this_frame = True
       object.health += object.regen_value
       if object.health > object.max_health:
@@ -723,10 +703,11 @@ class Unit(Entity):
     #self.action_range = [self.coords]
 
     #move on to next action
-  def display_hints(self) -> None:
+  def calculate_action_range(self) -> None:
     #display the hints for the unit
     #this also calculates the action ranges for the units, not during do_action
     global selected_object, selected_object
+    self.action_range = [self.coords]
     if self.action == "move":
       #get movement_range
       #self.movement_range_placeholder has 2 uses
@@ -743,7 +724,7 @@ class Unit(Entity):
         self.action_range_placeholder = deepcopy(self.action_range)
 
         for movement_tile in self.action_range_placeholder:
-          if return_occupied(movement_tile, object = "unit") == False or Player.player_list[current_player].owns_unit(return_occupied(movement_tile, object = "unit")):
+          if return_occupied(movement_tile, object = "unit") == False or return_occupied(movement_tile, object = "unit") in Player.player_list[current_player].units:
           #if empty spot or player owns dude that is there
             if movement_tile[0] >= 0 and movement_tile[0] <= MAP_LENGTH and movement_tile[1] >= 0 and movement_tile[1] <= MAP_LENGTH:
               #if inside the map
@@ -776,7 +757,7 @@ class Unit(Entity):
       self.action_range.clear()
       for movement_tile in self.action_range_placeholder:
         if movement_tile not in self.action_range:
-          if return_occupied(movement_tile, object = "unit") and not Player.player_list[current_player].owns_unit(return_occupied(movement_tile, object = "unit")):
+          if return_occupied(movement_tile, object = "unit") and return_occupied(movement_tile, object = "unit") not in Player.player_list[current_player].units:
             self.action_range.append(movement_tile)
       #display hints to show the possible attack locations
     elif self.action == "heal":
@@ -791,11 +772,8 @@ class Unit(Entity):
       self.action_range.clear()
       for movement_tile in self.action_range_placeholder:
         if movement_tile not in self.action_range:
-          if return_occupied(movement_tile, object = "unit") and Player.player_list[current_player].owns_unit(return_occupied(movement_tile, object = "unit")):
+          if return_occupied(movement_tile, object = "unit") and return_occupied(movement_tile, object = "unit") in Player.player_list[current_player].units:
             self.action_range.append(movement_tile)
-    for hint in self.action_range:
-      hint_x, hint_y = coordConvert(hint)
-      pygame.draw.circle(screen, (255, 255, 0), (hint_x + offset_x, hint_y + offset_y), 10)
 
   def display_stats(self, x: int, y: int, text_display_size: int = 20) -> None:
     #x and y should be unit display coords
@@ -1039,7 +1017,7 @@ def display_resources(resources: List[int], x: int, y: int, display_all: bool = 
 
 class Tech:
   tech_size = 100
-  def __init__(self, stats: List[Any]):
+  def __init__(self, stats: List[Any], player_number: int):
     #stats = [name, cost, x, y, preceding_tech, unit, building, player_action, terrain]
     #x and y are where they should be displayed
     self.name = stats[0]
@@ -1055,39 +1033,40 @@ class Tech:
     self.player_action = stats[7]
     self.terrain = stats[8]
     self.img = stats[9]
+    Player.player_list[player_number].techs.append(self.name)
     if self.unit != None:
       if "float" in self.unit[9]:
-        Player.player_list[current_player].available_naval_units.append(self.unit)
+        Player.player_list[player_number].available_naval_units.append(self.unit)
       else:
-        Player.player_list[current_player].available_units.append(self.unit)
+        Player.player_list[player_number].available_units.append(self.unit)
     if self.building != None:
-      Player.player_list[current_player].available_buildings.append(self.building)
+      Player.player_list[player_number].available_buildings.append(self.building)
     if self.upgraded_building != None:
-      Player.player_list[current_player].available_upgraded_buildings.append(self.upgraded_building)
+      Player.player_list[player_number].available_upgraded_buildings.append(self.upgraded_building)
     if self.player_action != None:
-      Player.player_list[current_player].available_actions.append(self.player_action)
+      Player.player_list[player_number].available_actions.append(self.player_action)
     if self.terrain != None:
-      Player.player_list[current_player].available_terrain.append(self.terrain)
+      Player.player_list[player_number].available_terrain.append(self.terrain)
 
 #unit stats
 #var = ["name", health, regen, attack, defense, range, movement, cost [money, wood, metal, food], timer, sequences, abilities]
-man = ["Man", 8, 3, 6, 2,  1, 2, [1, 1, 1], 10, [["move", "attack"], ["heal"]], []]
+man = ["Man", 8, 3, 6, 2,  1, 2, [0, 0, 0], 10, [["move", "attack"], ["heal"]], []]
 #man can move 1 or attack
-swordsman = ["Swordsman", 12, 4, 9, 3, 1, 2, [3, 5, 2], 15, [["move", "attack"], ["heal"]], []]
-spearman = ["Spearman", 10, 3, 8, 2, 1, 2, [3, 4, 2], 12, [["move", "attack", "attack"], ["heal"]], []]
-axeman = ["Axeman", 12, 4, 25, 3, 1, 1, [2, 5, 1], 13, [["move"], ["attack"], ["heal"]], []]
+swordsman = ["Swordsman", 12, 4, 9, 3, 1, 2, [0, 5, 0], 15, [["move", "attack"], ["heal"]], []]
+spearman = ["Spearman", 10, 3, 8, 2, 1, 2, [6, 6, 0], 12, [["move", "attack", "attack"], ["heal"]], []]
+axeman = ["Axeman", 12, 4, 25, 3, 1, 1, [2, 9, 1], 13, [["move"], ["attack"], ["heal"]], []]
 shieldman = ["Shieldman", 15, 5, 6, 4, 1, 1, [3, 10, 1], 10, [["move"], ["attack"]], []]
 #scout = ["Scout", Player.player_list[current_player].scouts, 3, 1, 5, 3, 1, 3, [3, 1, 0, 0], 3, [["move", "attack", "move"]], []]
 #scout can move 3, attack 3, and move 3
 #catapult = ["Catapult", Player.player_list[current_player].units, 5, 0, 10, 3, 3, 1, [3, 3, 0, 0], 8, [["move"], ["attack"]], []]
 #catapult can move 1 or attack 1
-archer = ["Archer", 8, 4, 7, 1, 2, 2, [3, 1, 1], 14, [["attack", "move"], ["move", "heal"]], []]
+archer = ["Archer", 8, 4, 7, 1, 2, 2, [3, 0, 0], 14, [["attack", "move"], ["move", "heal"]], []]
 crossbowman = ["Crossbowman", 5, 2, 15, 1, 3, 2, [10, 5, 3], 17, [["move", "attack"], ["attack", "move"], ["heal"]], []]
 medic = ["Medic", 10, 10, 0, 2, 1, 1, [3, 1, 2], 8, [["move", "heal other"], ["move", "heal"]], []]
-rider = ["Rider", 9, 5, 7, 2, 1, 3, [2, 1, 3], 12, [["move", "attack"], ["move", "heal"]], []]
+rider = ["Rider", 9, 5, 7, 2, 1, 3, [0, 0, 3], 12, [["move", "attack"], ["move", "heal"]], []]
 knight = ["Knight", 13, 6, 7, 1, 1, 3, [2, 4, 6], 18, [["move", "attack"], ["attack", "move"], ["heal"]], []]
 elephant = ["Elephant", 18, 6, 15, 2, 1, 3, [5, 3, 10], 30, [["move", "attack", "heal"]], []]
-ship = ["Ship", 10, 3, 1, 1, 0, 0, [2, 2, 2], 0, [["move", "attack"], ["move", "heal", "move"]], ["float"]]
+ship = ["Ship", 10, 3, 1, 1, 0, 0, [0, 0, 0], 0, [["move", "attack"], ["move", "heal", "move"]], ["float"]]
 steeler = ["Steeler", 20, 5, 1.5, 1.5, 0, 0, [2, 8, 3], 0, [["move", "attack", "move"], ["heal"]], ["float"]]
 
 #building stats
@@ -1158,7 +1137,7 @@ agriculture = ["Agriculture", 25, (750, 50), farming, None, None, plantation, No
 fertilization_img = pygame.image.load("tech/fertilization.png").convert_alpha()
 fertilization = ["Fertilization", 20, (825, 150), farming, None, None, None, "fertilize", None, fertilization_img]
 overharvesting_img = pygame.image.load("tech/overharvesting.png").convert_alpha()
-overharvesting = ["Overharvesting", 20, (750, 500), cultivation, None, None, None, "reap", None, overharvesting_img]
+overharvesting = ["Overharvesting", 20, (950, 300), cultivation, None, None, None, "reap", None, overharvesting_img]
 all_techs = [logging, trekking, archery, engineering, forestry, reforestation, medicine, climbing, smithery, sharpening, armoring, molding, mining, smelting, extraction, swimming, sailing, trade, economics, aquaculture, cultivation, riding, honor, taming, farming, agriculture, fertilization, overharvesting]
 
 class Animation:
@@ -1296,8 +1275,8 @@ Player.player_list[0].color = (0, 255, 255)
 Player.player_list[1].color = (255, 0, 0)
 
 #add starting cities
-Player.player_list[0].cities.append(City((2, 1), 0))
-Player.player_list[1].cities.append(City((4, 6), 1))
+Player.player_list[0].cities.append(City((4, 1), 0))
+Player.player_list[1].cities.append(City((9, 10), 1))
 #make it so all players can make units
 for _ in Player.player_list:
   _.available_units.append(man)
@@ -1407,49 +1386,52 @@ while True:
     display_map_hex(MAP)
 
     #display all units, buildings, cities of each player
-    for a_player in enumerate(Player.player_list):
-      #this also resets each unit'saction_range, so keep this above the display_hints method
-      a_player[1].update()
+    for a_player in Player.player_list:
+      #this also resets each unit's action_range, so keep this above the calculate_action_range method -> NOT ANYMORE
+      a_player.update()
     #even though all player units are displayed, make it so only the units belonging to current_player are controlled
 
-    if isinstance(selected_object, Unit) and selected_object.turn_done == False and selected_object.action_sequence != []:
+    if isinstance(selected_object, Unit) and not selected_object.turn_done and selected_object.action_sequence != []:
       #only display hints if unit has selected a sequence and his turn is not done
-      selected_object.display_hints()
+      #selected_object.calculate_action_range()
+      for hint in selected_object.action_range:
+        hint_x, hint_y = coordConvert(hint)
+        pygame.draw.circle(screen, (255, 255, 0), (hint_x + offset_x, hint_y + offset_y), 10)
     #display selection icons
     if selected_object != None:
       if isinstance(selected_object, Unit):
         screen.blit(unit_select_img, (selected_object.display_coords[0] + offset_x, selected_object.display_coords[1] + offset_y))
-        if not Player.player_list[current_player].owns_unit(selected_object):
+        if selected_object not in Player.player_list[current_player].units:
           screen.blit(foreign_unit_select_img, (selected_object.display_coords[0] + offset_x, selected_object.display_coords[1] + offset_y))
       elif isinstance(selected_object, Building):
         screen.blit(building_select_img, (selected_object.display_coords[0] + offset_x, selected_object.display_coords[1] + offset_y))
-        if not Player.player_list[current_player].owns_building(selected_object):
+        if selected_object not in Player.player_list[current_player].buildings:
           #if player does not own the building, draw the unowned icon above the regular icon
           screen.blit(foreign_building_select_img, (selected_object.display_coords[0] + offset_x, selected_object.display_coords[1] + offset_y))
       elif isinstance(selected_object, City):
         screen.blit(building_select_img, (selected_object.display_coords[0] + offset_x, selected_object.display_coords[1] + offset_y))
-        if not Player.player_list[current_player].owns_city(selected_object):
+        if selected_object not in Player.player_list[current_player].cities:
           screen.blit(foreign_building_select_img, (selected_object.display_coords[0] + offset_x, selected_object.display_coords[1] + offset_y))
       elif isinstance(selected_object, Location):
         screen.blit(location_img, (selected_object.display_coords[0] + offset_x, selected_object.display_coords[1] + offset_y))
-        if Player.player_list[current_player].owns_unit(return_occupied(selected_object.coords, "unit")):
+        if return_occupied(selected_object.coords, "unit") in Player.player_list[current_player].units:
           screen.blit(unit_location_img, (selected_object.display_coords[0] + offset_x, selected_object.display_coords[1] + offset_y))
-        elif Player.player_list[current_player].owns_building(return_occupied(selected_object.coords, "building")):
+        elif return_occupied(selected_object.coords, "building") in Player.player_list[current_player].buildings:
           screen.blit(location_select_img, (selected_object.display_coords[0] + offset_x, selected_object.display_coords[1] + offset_y))
-        elif Player.player_list[current_player].owns_city(return_occupied(selected_object.coords, "city")):
+        elif return_occupied(selected_object.coords, "city") in Player.player_list[current_player].cities:
           screen.blit(location_select_img, (selected_object.display_coords[0] + offset_x, selected_object.display_coords[1] + offset_y))
 
     #create a rect area for selected, targeted, and location
     screen.blit(selection_frame, (0, 0))
     #display selected object
     text(20, "Selected:", (0, 0, 255), 0, 50)
-    #displaying the selected object at the corner of screen depending on what it is
+    #displaying the selected object stats at the corner of screen depending on what it is
     if selected_object != None:
       if isinstance(selected_object, Unit):
         #display unit stats
         screen.blit(selected_object.image, (50, 100))
         selected_object.display_stats(50, 100)
-        if selected_object.turn_done == False:
+        if not selected_object.turn_done:
           display_action_sequence(selected_object.action_sequence, selected_object.action_index, 0, 300)
           
       elif isinstance(selected_object, Building):
@@ -1465,11 +1447,11 @@ while True:
       elif isinstance(selected_object, Location):
         selected_object.display(custom = (0, 100))
         screen.blit(location_img, (0, 100))
-        if Player.player_list[current_player].owns_unit(return_occupied(selected_object.coords, "unit")):
+        if return_occupied(selected_object.coords, "unit") in Player.player_list[current_player].units:
           screen.blit(unit_location_img, (0, 100))
-        elif Player.player_list[current_player].owns_building(return_occupied(selected_object.coords, "building")):
+        elif return_occupied(selected_object.coords, "building") in Player.player_list[current_player].buildings:
           screen.blit(location_select_img, (0, 100))
-        elif Player.player_list[current_player].owns_city(return_occupied(selected_object.coords, "city")):
+        elif return_occupied(selected_object.coords, "city") in Player.player_list[current_player].cities:
           screen.blit(location_select_img, (0, 100))
         #capitalize the first letter of the location
         text(20, str(selected_object.terrain)[0].upper() + str(selected_object.terrain)[1:].lower(), (0, 0, 0), 44, 75, alignx = "center")
@@ -1478,7 +1460,7 @@ while True:
       #if button(50, SCREENHEIGHT - 100, 100, 50, 10, available = selected_object.action != None):
       #if submit button is clicked
       #do unit action
-      if selected_object.turn_done == False:
+      if not selected_object.turn_done:
         try:
           if selected_object.action == "move":
             selected_object.do_action(receive_input(Location))
@@ -1494,14 +1476,15 @@ while True:
 
     if button(50, 0, 100, 50, 10):
       offset_x = 250
-      offset_y = 100
+      offset_y = 0
 
     if button(375, 0, 100, 50, 10):
       status = "tech tree"
+      selected_object = None
     text(30, "Tech", (0, 0, 0), 425, 25, alignx = "center", aligny = "center")
     
       #action skip button is clicked
-    if isinstance(selected_object, Unit) and selected_object.action_sequence != [] and selected_object.turn_done == False:
+    if isinstance(selected_object, Unit) and selected_object.action_sequence != [] and not selected_object.turn_done:
       if button(25, 175, 125, 125, 10):
         selected_object.next_action()
       screen.blit(skip_action_img, (50, 212.5))
@@ -1523,20 +1506,21 @@ while True:
 
     #these are all the possible things a player can do: choose unit action, upgrade building, build ships, spawn units, upgrade city, do player actions
     #choose unit sequence
-    if isinstance(selected_object, Unit) and selected_object in Player.player_list[current_player].units and selected_object.turn_done == False:
+    if isinstance(selected_object, Unit) and selected_object in Player.player_list[current_player].units and not selected_object.turn_done:
       if selected_object.action_sequence == []:
         for choice in enumerate(selected_object.action_sequences):
           if button(0, option_x + choice[0] * 50, len(choice[1]) * small_icon_size, 50, 10):
             selected_object.action_sequence = choice[1]
-            selected_object.action = selected_object.action_sequence[0]
-            selected_object.action_index = 0
-            selected_object.action_range = [(selected_object.coords[0], selected_object.coords[1])]
+            #selected_object.action = selected_object.action_sequence[0]
+            selected_object.action_index = -1
+            selected_object.action_range = [selected_object.coords]
+            selected_object.next_action()
             print(selected_object.action_sequence)
             break
           display_action_sequence(choice[1], -1, 0, option_x + choice[0] * 50, mini = True)
     #unit upgrade building
     elif isinstance(selected_object, Building) and selected_object in Player.player_list[current_player].buildings:
-      if Player.player_list[current_player].owns_unit(return_occupied(selected_object.coords, object = "unit")):
+      if return_occupied(selected_object.coords, object = "unit") in Player.player_list[current_player].units:
         #upgrade a building if there's a dude on it
         if selected_object.upgraded_building in Player.player_list[current_player].available_upgraded_buildings:
           #if there is no upgraded building, it would be: if None in available buildings, so that would be false
@@ -1605,7 +1589,7 @@ while True:
       #build new building
       for building_type in enumerate(Player.player_list[current_player].available_buildings):
         #a_building_type is a list containing the stats of a building
-        if not bool(return_occupied(selected_object.coords, object = "building")) and Player.player_list[current_player].owns_unit(return_occupied(selected_object.coords, object = "unit")) and selected_object.terrain in building_type[1][4] and not bool(return_occupied(selected_object.coords, object = "city")):
+        if not bool(return_occupied(selected_object.coords, object = "building")) and return_occupied(selected_object.coords, object = "unit") in Player.player_list[current_player].units and selected_object.terrain in building_type[1][4] and not bool(return_occupied(selected_object.coords, object = "city")):
           #if there is no other building there and u own a dude that is there and the terrain is in the building's terrain list and there is no city there
           if bool("cultivate" in building_type[1][5] and bool("crop" in selected_object.features or "harvested crop" in selected_object.features)) or bool(not "cultivate" in building_type[1][5]):
             #if the building is a cultivating building and it is on a crop/harvested crop or the building is not a cultivating building
@@ -1623,7 +1607,7 @@ while True:
       #do player action    
       for player_action in enumerate(Player.player_list[current_player].available_actions):
         #doing a player action
-        if Player.player_list[current_player].player_action_eligible(player_action[1], selected_object) and Player.player_list[current_player].owns_unit(return_occupied(selected_object.coords, object = "unit")) and not bool(return_occupied(selected_object.coords, object = "building")) and not bool(return_occupied(selected_object.coords, object = "city")):
+        if Player.player_list[current_player].player_action_eligible(player_action[1], selected_object) and return_occupied(selected_object.coords, object = "unit") in Player.player_list[current_player].units and not bool(return_occupied(selected_object.coords, object = "building")) and not bool(return_occupied(selected_object.coords, object = "city")):
           #if you own a dude there and there is no building there (to avoid chopping forest where there is a lumber hut) and there is no city there
           #can't do player action when there's a building there
           if button(player_action_x + player_action[0] * player_action_size, player_action_y, player_action_size, player_action_size, 20, available = bool(Player.player_list[current_player].money >= Player.cost_dict[player_action[1]])):
@@ -1646,9 +1630,11 @@ while True:
                 #if player has nothing selected or player selected a different space
                 btn_pressed_this_frame = True
                 selected_object = unit
+                if selected_object.action_sequence != [] and not selected_object.turn_done:
+                  selected_object.calculate_action_range()
               else:
                 #user clicked on same spot and already has something selected
-                print("same unit")
+                print("same space")
                 selected_object = alternate_selection(selected_object)
       if not btn_pressed_this_frame:
         for player in Player.player_list:
@@ -1733,14 +1719,15 @@ while True:
     
     for a_tech in all_techs:
       #a_tech is a list of the tech stats, not a class object, therefore, a_tech[0] is the name, a_tech[1] is the cost, a_tech[4] is the preceding tech
-      if a_tech[3] == None or Player.player_list[current_player].owns_tech(a_tech[3][0]):
+      if a_tech[3] == None or a_tech[3][0] in Player.player_list[current_player].techs:
         #if there is no tech that precedes a_tech, or if the player owns the preceding tech, tech is available to buy
-        if not Player.player_list[current_player].owns_tech(a_tech[0]):
+        if a_tech[0] not in Player.player_list[current_player].techs:
           #if the player does not own the tech
           if button(a_tech[2][0] + tech_offset_x, a_tech[2][1] + tech_offset_y, Tech.tech_size, Tech.tech_size, 10, available = Player.player_list[current_player].money >= a_tech[1]):
-          #owns_tech will compare names of the tech, archery[4][0] == "Logging"
+          #owns_tech will compare names of the tech, archery[3][0] == "Logging"
             Player.player_list[current_player].money -= a_tech[1]
-            Player.player_list[current_player].techs.append(Tech(a_tech))
+            Tech(a_tech, current_player)
+            print("tech bought")
         else:
           #player owns the tech already
           pygame.draw.rect(screen, (0, 255, 255), (a_tech[2][0] + tech_offset_x, a_tech[2][1] + tech_offset_y, Tech.tech_size, Tech.tech_size), 0, 10)
