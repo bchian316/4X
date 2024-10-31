@@ -1,6 +1,6 @@
 #if there's a weird bug, try switching the for loop iterable variable from _ to something else
 #maybe that'll help
-
+#if action_sequence is [], turn_done is false
 '''REMINDER:
 WHENEVER THE PLAYER DOES SOMETHING THAT CAN CHANGE A UNIT's ACTION RANGE, MAKE SURE YOU RESET THE UNIT
 SO THE PLAYER HAS TO RECLICK ON THE SAME UNIT
@@ -253,6 +253,16 @@ foreign_unit_select_img = pygame.image.load("selection/foreign select.png").conv
 foreign_building_select_img = pygame.transform.scale(foreign_unit_select_img, (75, 75)).convert_alpha()
 location_img = pygame.image.load("selection/foreign location.png").convert_alpha()
 
+def in_map(tile: Tuple[int, int]) -> bool:
+  if tile[0] >= 0 and tile[0] <= MAP_LENGTH and tile[1] >= 0 and tile[1] <= MAP_LENGTH:
+    return True
+  return False
+
+def in_terrain(tile: Tuple[int, int], available: List[str]) -> bool:
+  if MAP[tile[1]][tile[0]].terrain in available:
+    return True
+  return False
+
 #map features (food, seaweed, etc)
 def display_map_hex(map: List[List[Location]]) -> None:
   #use offsets to move the entire map around
@@ -267,14 +277,7 @@ def display_map_hex(map: List[List[Location]]) -> None:
 def return_Adjacent_hex(coords: Tuple[int, int]) -> List[Tuple[int, int]]:
   #returns a list of all the adjacent hexes based on one hex
   #the items returned are x and y coords to be used on the map
-  adjacent_hexes = []
-  adjacent_hexes.append((coords[0]-1, coords[1]-1))
-  adjacent_hexes.append((coords[0], coords[1]-1))
-  adjacent_hexes.append((coords[0]-1, coords[1]))
-  adjacent_hexes.append((coords[0]+1, coords[1]))
-  adjacent_hexes.append((coords[0], coords[1]+1))
-  adjacent_hexes.append((coords[0]+1, coords[1]+1))
-  return adjacent_hexes
+  return [(coords[0]-1, coords[1]-1), (coords[0], coords[1]-1), (coords[0]-1, coords[1]), (coords[0]+1, coords[1]), (coords[0], coords[1]+1), (coords[0]+1, coords[1]+1)]
   #adjacent_hexes has the coordinates of all the adjacent hexes, not their terrain stuff
   #u can call the terrain manually
 
@@ -325,10 +328,10 @@ class Player:
     #player number determines the order the players play in starting from 0 not 1
     self.player_number = player_number
     self.color = (randint(0, 255), randint(0, 255), randint(0, 255))
-    self.money = 0 #0
-    self.wood = 0 #0
-    self.metal = 0 #0
-    self.food = 0 #0
+    self.money = 10000 #0
+    self.wood = 10000 #0
+    self.metal = 10000 #0
+    self.food = 10000 #0
     self.units = []
     self.buildings = []
     self.cities = []
@@ -440,9 +443,6 @@ class Player:
     #display cities
     self.display_cities()
     #display units
-    '''for unit in self.units:
-      #reset action ranges so they dont stack (happens every frame)
-      unit.action_range = [(unit.coords[0], unit.coords[1])]'''
     self.display_units()
     #update everything:
     #add the money per turn, resources per turn
@@ -527,8 +527,8 @@ class Player:
   def turn_update_after(self) -> None:
     #this takes place after turn, where units gain energy and cities reset exhaustion
     for unit in self.units:
-      unit.turn_done = False
       unit.unit_reset()
+      unit.turn_done = False #gain energy
     for city in self.cities:
       if return_occupied(city.coords, "unit") == False:
         #cities cannot cooldown if there's a person on it
@@ -599,7 +599,6 @@ class Unit(Entity):
     self.action_index = 0
     #action_index starts at 0
     self.action_range = [self.coords]
-    self.action_range_placeholder = deepcopy(self.action_range)
     #moverange is a list of all the adjacent hexes that the unit can be moved to
   def captureVillage(self) -> None:
     if "village" in MAP[self.coords[1]][self.coords[0]].features:
@@ -612,6 +611,7 @@ class Unit(Entity):
     self.action_index = 0
     self.action_sequence = []
     self.action_range = [self.coords]
+    self.turn_done = True
   def next_action(self) -> None:
     global selected_object
     try:
@@ -621,7 +621,6 @@ class Unit(Entity):
       selected_object = self
     except IndexError:
       self.unit_reset()
-      self.turn_done = True
       print("turn done")
   def calculate_damage(self, defender: 'Unit') -> int:
     attack_damage = (self.health/self.max_health)*self.attack
@@ -706,74 +705,53 @@ class Unit(Entity):
   def calculate_action_range(self) -> None:
     #display the hints for the unit
     #this also calculates the action ranges for the units, not during do_action
-    global selected_object, selected_object
+    global selected_object
     self.action_range = [self.coords]
     if self.action == "move":
-      #get movement_range
-      #self.movement_range_placeholder has 2 uses
-      #the first one is to make sure the iterable doesn't keep have items added to it which would make a forever loop
-      #the second one is to delete all the duplicates and restricts movement range based on bad guy units, because usint the set method does not work since this is a list of lists, not a list of something else
-      #some stuff for the float ability
       #set the available terrain as only water and ocean
       #available terrain has no effect on float units; they have a terrain of ocean and water
       if "float" in self.abilities:
-        available_terrain_placeholder = deepcopy(Player.player_list[current_player].available_terrain)
-        Player.player_list[current_player].available_terrain = ["water", "ocean"]
-      for movement_counter in range(self.movement):
+        available_terrain_placeholder = Player.player_list[self.player_number].available_terrain
+        Player.player_list[self.player_number].available_terrain = ["water", "ocean"]
+      for counter in range(self.movement):
         #this next for loop extends self.movement_range by 1 hex in every direction
-        self.action_range_placeholder = deepcopy(self.action_range)
-
-        for movement_tile in self.action_range_placeholder:
-          if return_occupied(movement_tile, object = "unit") == False or return_occupied(movement_tile, object = "unit") in Player.player_list[current_player].units:
-          #if empty spot or player owns dude that is there
-            if movement_tile[0] >= 0 and movement_tile[0] <= MAP_LENGTH and movement_tile[1] >= 0 and movement_tile[1] <= MAP_LENGTH:
-              #if inside the map
-              if MAP[movement_tile[1]][movement_tile[0]].terrain in Player.player_list[current_player].available_terrain:
-                #in good terrain?
-                self.action_range.extend(return_Adjacent_hex(movement_tile))
-                #now we have all the hexes we can move to minus the ones blocked by enemy units or bad terrain
-      #remove duplicates from list
-      self.action_range_placeholder = deepcopy(self.action_range)
-      self.action_range.clear()
-      for movement_tile in self.action_range_placeholder:
-        if movement_tile not in self.action_range and return_occupied(movement_tile, object = "unit") == False:
-          #remove duplicates and places occupied by other ppl
-          if movement_tile[0] >= 0 and movement_tile[0] <= MAP_LENGTH and movement_tile[1] >= 0 and movement_tile[1] <= MAP_LENGTH:
-            #if inside the map
-            if MAP[movement_tile[1]][movement_tile[0]].terrain in Player.player_list[current_player].available_terrain:
-              #remove places that are bad terrain
-              self.action_range.append(movement_tile)
+        #movement_tile is already in the range (we dont have to check terrain and map restrictions), extended_tile is not
+        for movement_tile in deepcopy(self.action_range): #try to extend each tile
+          for extended_tile in return_Adjacent_hex(movement_tile): #extend movement_tile
+            if extended_tile not in self.action_range and not return_occupied(extended_tile, object = "unit"):
+              #remove duplicates and places occupied by other ppl
+              if in_map(extended_tile) and in_terrain(extended_tile, Player.player_list[self.player_number].available_terrain):
+                self.action_range.append(extended_tile)
       if "float" in self.abilities:
         #reset terrain for float units
-        Player.player_list[current_player].available_terrain = deepcopy(available_terrain_placeholder)
+        Player.player_list[self.player_number].available_terrain = available_terrain_placeholder
+        del(available_terrain_placeholder)
+      self.action_range.remove(self.coords)
       #display hints to show the possible move locations
     elif self.action == "attack":
-      for attack_counter in range(self.range):
-        self.action_range_placeholder = deepcopy(self.action_range)
-
-        for movement_tile in self.action_range_placeholder:
+      for counter in range(self.range):
+        for movement_tile in deepcopy(self.action_range):
           self.action_range.extend(return_Adjacent_hex(movement_tile))
-      self.action_range_placeholder = deepcopy(self.action_range)
-      self.action_range.clear()
-      for movement_tile in self.action_range_placeholder:
-        if movement_tile not in self.action_range:
-          if return_occupied(movement_tile, object = "unit") and return_occupied(movement_tile, object = "unit") not in Player.player_list[current_player].units:
-            self.action_range.append(movement_tile)
-      #display hints to show the possible attack locations
+      counter = 0
+      while counter < len(self.action_range):
+        if not return_occupied(self.action_range[counter], object = "unit") or return_occupied(self.action_range[counter], object = "unit") in Player.player_list[self.player_number].units:
+          #if there is no dude there or you own the dude
+          self.action_range.pop(counter)
+          continue
+        counter += 1
     elif self.action == "heal":
-      self.action_range = [self.coords]
+      pass
     elif self.action == "heal other":
-      for heal_counter in range(self.range):
-        self.action_range_placeholder = deepcopy(self.action_range)
-
-        for movement_tile in self.action_range_placeholder:
+      for counter in range(self.range):
+        for movement_tile in (self.action_range):
           self.action_range.extend(return_Adjacent_hex(movement_tile))
-      self.action_range_placeholder = deepcopy(self.action_range)
-      self.action_range.clear()
-      for movement_tile in self.action_range_placeholder:
-        if movement_tile not in self.action_range:
-          if return_occupied(movement_tile, object = "unit") and return_occupied(movement_tile, object = "unit") in Player.player_list[current_player].units:
-            self.action_range.append(movement_tile)
+      counter = 0
+      while counter < len(self.action_range):
+        if not return_occupied(self.action_range[counter], object = "unit") or return_occupied(self.action_range[counter], object = "unit") not in Player.player_list[self.player_number].units:
+          #if there is no dude there or you DON'T own the dude
+          self.action_range.pop(counter)
+          continue
+        counter += 1
 
   def display_stats(self, x: int, y: int, text_display_size: int = 20) -> None:
     #x and y should be unit display coords
@@ -904,9 +882,9 @@ class Building(Entity):
   def upgrade(self) -> None:
     global selected_object
     #buildings can only be upgraded into one building
-    Player.player_list[current_player].buildings.append(Building(self.upgraded_building, self.coords, current_player))
-    selected_object = Player.player_list[current_player].buildings[-1]
-    Player.player_list[current_player].buildings.remove(self)
+    Player.player_list[self.player_number].buildings.append(Building(self.upgraded_building, self.coords, self.player_number))
+    selected_object = Player.player_list[self.player_number].buildings[-1]
+    Player.player_list[self.player_number].buildings.remove(self)
 
 
 
@@ -963,9 +941,9 @@ def return_occupied(coords: Tuple[int, int], object: str) -> Any:
         if an_object.coords == coords:
           return an_object
     elif object == "city":
-      for a_city in player.cities:
-        if a_city.coords == coords:
-          return a_city
+      for an_object in player.cities:
+        if an_object.coords == coords:
+          return an_object
   return False
 
 #resource colors
@@ -1281,7 +1259,7 @@ Player.player_list[1].cities.append(City((9, 10), 1))
 for _ in Player.player_list:
   _.available_units.append(man)
   _.available_naval_units.append(ship)
-
+#Player.player_list[1].units.append(Unit(man, (4, 2), 1))
 #for testing:
 '''Player.player_list[0].available_actions.append("chop")
 Player.player_list[0].available_actions.append("cultivate")
@@ -1290,7 +1268,7 @@ Player.player_list[0].available_actions.append("grow")'''
 '''Player.player_list[0].units.append(Unit(man, 3, 3))
 Player.player_list[0].units.append(Unit(man, 4, 4))
 Player.player_list[0].units.append(Unit(archer, 3, 5))
-Player.player_list[1].units.append(Unit(man, 4, 3))
+
 Player.player_list[1].units.append(Unit(man, 2, 2))
 Player.player_list[0].units.append(Unit(ship, 5, 6))
 Player.player_list[0].units.append(Unit(steeler, 6, 7))
@@ -1391,7 +1369,7 @@ while True:
       a_player.update()
     #even though all player units are displayed, make it so only the units belonging to current_player are controlled
 
-    if isinstance(selected_object, Unit) and not selected_object.turn_done and selected_object.action_sequence != []:
+    if isinstance(selected_object, Unit) and selected_object in Player.player_list[current_player].units and selected_object.action_sequence != []:
       #only display hints if unit has selected a sequence and his turn is not done
       #selected_object.calculate_action_range()
       for hint in selected_object.action_range:
@@ -1460,7 +1438,7 @@ while True:
       #if button(50, SCREENHEIGHT - 100, 100, 50, 10, available = selected_object.action != None):
       #if submit button is clicked
       #do unit action
-      if not selected_object.turn_done:
+      if not selected_object.turn_done and selected_object.action != None:
         try:
           if selected_object.action == "move":
             selected_object.do_action(receive_input(Location))
@@ -1480,11 +1458,10 @@ while True:
 
     if button(375, 0, 100, 50, 10):
       status = "tech tree"
-      selected_object = None
     text(30, "Tech", (0, 0, 0), 425, 25, alignx = "center", aligny = "center")
     
       #action skip button is clicked
-    if isinstance(selected_object, Unit) and selected_object.action_sequence != [] and not selected_object.turn_done:
+    if isinstance(selected_object, Unit) and selected_object in Player.player_list[current_player].units and selected_object.action_sequence != []:
       if button(25, 175, 125, 125, 10):
         selected_object.next_action()
       screen.blit(skip_action_img, (50, 212.5))
@@ -1506,18 +1483,18 @@ while True:
 
     #these are all the possible things a player can do: choose unit action, upgrade building, build ships, spawn units, upgrade city, do player actions
     #choose unit sequence
-    if isinstance(selected_object, Unit) and selected_object in Player.player_list[current_player].units and not selected_object.turn_done:
-      if selected_object.action_sequence == []:
-        for choice in enumerate(selected_object.action_sequences):
-          if button(0, option_x + choice[0] * 50, len(choice[1]) * small_icon_size, 50, 10):
-            selected_object.action_sequence = choice[1]
-            #selected_object.action = selected_object.action_sequence[0]
-            selected_object.action_index = -1
-            selected_object.action_range = [selected_object.coords]
-            selected_object.next_action()
-            print(selected_object.action_sequence)
-            break
-          display_action_sequence(choice[1], -1, 0, option_x + choice[0] * 50, mini = True)
+    if isinstance(selected_object, Unit) and selected_object in Player.player_list[current_player].units and selected_object.action_sequence == [] and not selected_object.turn_done:
+    #if a unit is selected and the current player owns him and his turn is not done  
+      for choice in enumerate(selected_object.action_sequences):
+        if button(0, option_x + choice[0] * 50, len(choice[1]) * small_icon_size, 50, 10):
+          selected_object.action_sequence = choice[1]
+          #selected_object.action = selected_object.action_sequence[0]
+          selected_object.action_index = -1
+          selected_object.action_range = [selected_object.coords]
+          selected_object.next_action()
+          print(selected_object.action_sequence)
+          break
+        display_action_sequence(choice[1], -1, 0, option_x + choice[0] * 50, mini = True)
     #unit upgrade building
     elif isinstance(selected_object, Building) and selected_object in Player.player_list[current_player].buildings:
       if return_occupied(selected_object.coords, object = "unit") in Player.player_list[current_player].units:
@@ -1545,7 +1522,6 @@ while True:
               #replace old unit with new unit
               Player.player_list[current_player].units[old_unit_index] = upgrade_to_naval(Player.player_list[current_player].units[old_unit_index], Unit(unit_type[1], selected_object.coords, current_player))
               Player.player_list[current_player].units[old_unit_index].unit_reset()
-              Player.player_list[current_player].units[old_unit_index].turn_done = True
               del(old_unit_index)
               print("turn done")
             screen.blit(Unit.img_dict[unit_type[1][0]], (0, option_x + 25 + unit_type[0] * 50))
@@ -1564,7 +1540,6 @@ while True:
               selected_object.spawn_timer += unit_type[1][8]
               Player.player_list[current_player].units.append(Unit(unit_type[1], selected_object.coords, current_player))
               Player.player_list[current_player].units[-1].unit_reset()
-              Player.player_list[current_player].units[-1].turn_done = True
               print("turn done")
           else:
             pygame.draw.rect(screen, (255, 0, 0), ((Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2), Unit.unit_size * 2, Unit.unit_size * 2), width = 0, border_radius = 10)
@@ -1630,7 +1605,7 @@ while True:
                 #if player has nothing selected or player selected a different space
                 btn_pressed_this_frame = True
                 selected_object = unit
-                if selected_object.action_sequence != [] and not selected_object.turn_done:
+                if selected_object.action_sequence != []:
                   selected_object.calculate_action_range()
               else:
                 #user clicked on same spot and already has something selected
@@ -1713,6 +1688,8 @@ while True:
 
     if button(0, 0, 50, 50, 10):
       status = "playing"
+      if isinstance(selected_object, Unit) and selected_object in Player.player_list[current_player].units and selected_object.action_sequence != []:
+        selected_object.calculate_action_range()
     
     text(25, str("Player " + str(current_player + 1)) + " turn", Player.player_list[current_player].color, SCREENLENGTH, 0, alignx = "right")
     display_resources([Player.player_list[current_player].money, Player.player_list[current_player].wood, Player.player_list[current_player].metal, Player.player_list[current_player].food], SCREENLENGTH - 25, 50, display_all = True)

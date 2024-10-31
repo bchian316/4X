@@ -8,7 +8,7 @@ Units:
   Units are spawned from cities
   Units can perform actions off of their action sequences
   Units have varying attack, defense, movement, range, cost, health, regeneration rate, action sequences, and abilities
-  Terrain and enemy units can block unit movement
+  Terrain and enemy and friendly units can block unit movement
   After the unit performs its sequence, it is immovable until the next turn
 Player:
   Players can perform actions on any location inhabited by a unit (grow, harvest, cultivate, chop)
