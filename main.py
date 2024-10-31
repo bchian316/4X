@@ -156,14 +156,16 @@ class Location:
   seaweed_img = pygame.image.load("terrain/seaweed.png").convert_alpha()
   ore_img = pygame.image.load("terrain/ore.png").convert_alpha()
   village_img = pygame.image.load("terrain/village.png").convert_alpha()
-  def __init__(self, coords: Tuple[int, int], terrain: str, features: List[str]):
+  deposit_x = 15
+  deposit_y = 15
+  def __init__(self, coords: Tuple[int, int], terrain: str, features: List[str], deposit: Tuple[int, int, int]):
     self.terrain = terrain
     if self.terrain: #if terrain is not a void
       self.img = Location.img_dict[self.terrain]
     self.features = features
     self.coords = coords
     self.display_coords = coordConvert(self.coords, returnCenter = False)
-    #reverse the 2 lines that center the returned coords
+    self.deposit = deposit
 
   def display(self, custom: Optional[Tuple[int, int]] = None) -> None:
     if custom != None:
@@ -184,7 +186,24 @@ class Location:
       screen.blit(Location.ore_img, coords)
     if "village" in self.features:
       screen.blit(Location.village_img, coords)
-
+    for resource_type in enumerate(self.deposit):
+      #resource_type[0] is the x coord, resource is the y coord
+      for resource in range(resource_type[1]):
+        if resource_type[0] == 0:
+          screen.blit(wood_resource_img, (coords[0] + resource_type[0]*Location.deposit_x + 15, coords[1] + ((hex_size/2)*sqrt(3))/2 + resource*Location.deposit_y - resource_type[1]*Location.deposit_y/2))
+        elif resource_type[0] == 1:
+          screen.blit(metal_resource_img, (coords[0] + resource_type[0]*Location.deposit_x + 15, coords[1] + ((hex_size/2)*sqrt(3))/2 + resource*Location.deposit_y - resource_type[1]*Location.deposit_y/2))
+        elif resource_type[0] == 2:
+          screen.blit(food_resource_img, (coords[0] + resource_type[0]*Location.deposit_x + 15, coords[1] + ((hex_size/2)*sqrt(3))/2 + resource*Location.deposit_y - resource_type[1]*Location.deposit_y/2))
+  def give_deposit(self):
+    if self.deposit != (0, 0, 0):
+      for _ in range(self.deposit[0]):
+        Animation._list.append(resourceAnimation([0, 1, 0, 0], randint(round(self.display_coords[0] + offset_x + ((hex_size/2)*sqrt(3))/2 - resourceAnimation.animation_range/2), round(self.display_coords[0] + offset_x + ((hex_size/2)*sqrt(3))/2 + resourceAnimation.animation_range/2)), randint(round(self.display_coords[1] + offset_y + hex_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[1] + offset_y + hex_size/2 + resourceAnimation.animation_range/2)), SCREENLENGTH - 12.5, 87.5, 25, wood_resource_img))
+      for _ in range(self.deposit[1]):
+        Animation._list.append(resourceAnimation([0, 0, 1, 0], randint(round(self.display_coords[0] + offset_x + ((hex_size/2)*sqrt(3))/2 - resourceAnimation.animation_range/2), round(self.display_coords[0] + offset_x + ((hex_size/2)*sqrt(3))/2 + resourceAnimation.animation_range/2)), randint(round(self.display_coords[1] + offset_y + hex_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[1] + offset_y + hex_size/2 + resourceAnimation.animation_range/2)), SCREENLENGTH - 12.5, 122.5, 25, metal_resource_img))
+      for _ in range(self.deposit[2]):
+        Animation._list.append(resourceAnimation([0, 0, 0, 1], randint(round(self.display_coords[0] + offset_x + ((hex_size/2)*sqrt(3))/2 - resourceAnimation.animation_range/2), round(self.display_coords[0] + offset_x + ((hex_size/2)*sqrt(3))/2 + resourceAnimation.animation_range/2)), randint(round(self.display_coords[1] + offset_y + hex_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[1] + offset_y + hex_size/2 + resourceAnimation.animation_range/2)), SCREENLENGTH - 12.5, 137.5, 25, food_resource_img))
+      self.deposit = (0, 0, 0)
 #lets make the map a constant size (4 side length: hexagon) = 37 tiles
 #lets make 9 diagonal columns because there are 2x-1 columns when x is side length
 #the map will be the constant variable that revolves around all the players
@@ -229,7 +248,11 @@ for row in enumerate(TERRAIN):
       features.append("ore")
     if (coordx, coordy) in VILLAGES:
       features.append("village")
-    MAP[coordy].append(Location((coordx, coordy), tile[1], features))
+    if randint(1, 10) == 1 and tile[1] != "":
+      deposit = (randint(0, 5), randint(0, 5), randint(0, 5))
+    else:
+      deposit = (0, 0, 0)
+    MAP[coordy].append(Location((coordx, coordy), tile[1], features, deposit))
 #important variables for formatting and stuff
 selected_object = None
 selected_collision_range = 75
@@ -648,6 +671,7 @@ class Unit(Entity):
         self.display_coords = coordConvert(self.coords, allocateSize = self.img_size)
         #check if unit is on village
         self.captureVillage()
+        MAP[self.coords[1]][self.coords[0]].give_deposit()
         for player in Player.player_list: #check if buildings/cities are stolen
           player.updateBuildings()
           player.updateCities()
@@ -664,7 +688,7 @@ class Unit(Entity):
         btn_pressed_this_frame = True
         print("successful attack", type(object))
         #the attack is valid, so we move on to the next action
-        for animation in range(self.calculate_damage(object)):
+        for counter in range(self.calculate_damage(object)):
           Animation._list.append(damageAnimation(object.display_coords[0] + Unit.unit_size/2 + offset_x - damageAnimation.img_size/2, object.display_coords[1] + Unit.unit_size/2 + offset_y - damageAnimation.img_size/2))
           print("animation created")
         #make the targeted_unit lose health
