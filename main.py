@@ -130,6 +130,7 @@ tech_offset_y = 0
 
 def coordConvert(coords: Tuple[int, int], allocateSize: Optional[int] = None, returnCenter = True) -> Tuple[float, float]:
   #this function returns display coordinates from game location coordinates
+  #you should only allocateSize if returnCenter is true
   display_x = (coords[1] - 1)*(-hex_size/4)*sqrt(3)
   display_y = (coords[1] - 1)*(hex_size*0.75)
   display_x += (coords[0] - 1)*(hex_size/2)*sqrt(3)
@@ -153,7 +154,7 @@ class Location:
   img_dict = {"plains":plains_img, "forest":forest_img, "water":water_img, "ocean":ocean_img, "mountain":mountain_img, "dense forest":dense_forest_img}
   crop_img = pygame.image.load("terrain/crop.png").convert_alpha()
   harvested_crop_img = pygame.image.load("terrain/harvested crop.png").convert_alpha()
-  seaweed_img = pygame.image.load("terrain/seaweed.png").convert_alpha()
+  mineral_img = pygame.image.load("terrain/mineral.png").convert_alpha()
   ore_img = pygame.image.load("terrain/ore.png").convert_alpha()
   village_img = pygame.image.load("terrain/village.png").convert_alpha()
   deposit_x = 15
@@ -180,8 +181,8 @@ class Location:
       screen.blit(Location.crop_img, coords)
     elif "harvested crop" in self.features:
       screen.blit(Location.harvested_crop_img, coords)
-    if "seaweed" in self.features:
-      screen.blit(Location.seaweed_img, coords)
+    if "mineral" in self.features:
+      screen.blit(Location.mineral_img, coords)
     if "ore" in self.features:
       screen.blit(Location.ore_img, coords)
     if "village" in self.features:
@@ -227,32 +228,35 @@ MAP_LENGTH = len(TERRAIN)-1
 #useless for now
 CROP = [(6, 2), (5, 3), (6, 3), (2, 4), (5, 6) ,(12, 6), (6, 7), (7, 8), (9, 11), (10, 11), (8, 7)]
 HARVESTED_CROP = []
-SEAWEED = [(7, 17), (9, 12), (10, 12), (7, 1), (8, 2), (4, 3), (4, 4), (7, 4), (1, 5), (3, 7), (7, 7), (5, 8), (8, 4)]
+MINERAL = [(9, 12), (10, 12), (7, 1), (8, 2), (4, 3), (4, 4), (7, 4), (1, 5), (3, 7), (7, 7), (5, 8), (8, 4)]
 ORE = [(7, 2), (0, 3), (5, 4), (5, 5), (6, 6), (11, 6), (7, 9), (9, 9), (10, 9), (7, 11), (9, 11), (12, 12)]
 VILLAGES = [(8, 4), (2, 5), (8, 7), (3, 0), (4, 8), (12, 10), (2, 2)]
 MAP = []
-#configure map
-for row in enumerate(TERRAIN):
-  coordy = row[0]
-  MAP.append([])
-  for tile in enumerate(row[1]):
-    coordx = tile[0]
-    features = []
-    if (coordx, coordy) in CROP:
-      features.append("crop")
-    if (coordx, coordy) in HARVESTED_CROP:
-      features.append("harvested crop")
-    if (coordx, coordy) in SEAWEED:
-      features.append("seaweed")
-    if (coordx, coordy) in ORE:
-      features.append("ore")
-    if (coordx, coordy) in VILLAGES:
-      features.append("village")
-    if randint(1, 10) == 1 and tile[1] != "":
-      deposit = (randint(0, 5), randint(0, 5), randint(0, 5))
-    else:
-      deposit = (0, 0, 0)
-    MAP[coordy].append(Location((coordx, coordy), tile[1], features, deposit))
+def configure_map() -> None:
+  #set or reset map (just in case we need to reset entire map for some reason)
+  MAP.clear()
+  for row in enumerate(TERRAIN):
+    coordy = row[0]
+    MAP.append([])
+    for tile in enumerate(row[1]):
+      coordx = tile[0]
+      features = []
+      if (coordx, coordy) in CROP:
+        features.append("crop")
+      if (coordx, coordy) in HARVESTED_CROP:
+        features.append("harvested crop")
+      if (coordx, coordy) in MINERAL:
+        features.append("mineral")
+      if (coordx, coordy) in ORE:
+        features.append("ore")
+      if (coordx, coordy) in VILLAGES:
+        features.append("village")
+      if randint(1, 10) == 1 and tile[1] != "":
+        deposit = (randint(0, 5), randint(0, 5), randint(0, 5))
+      else:
+        deposit = (0, 0, 0)
+      MAP[coordy].append(Location((coordx, coordy), tile[1], features, deposit))
+configure_map()
 #important variables for formatting and stuff
 selected_object = None
 selected_collision_range = 75
@@ -286,7 +290,7 @@ def in_terrain(tile: Tuple[int, int], available: List[str]) -> bool:
     return True
   return False
 
-#map features (food, seaweed, etc)
+#map features (food, mineral, etc)
 def display_map_hex(map: List[List[Location]]) -> None:
   #use offsets to move the entire map around
   for row in map:
@@ -332,21 +336,21 @@ class Player:
   player_list = []
   chop_cost = 5
   cultivate_cost = 10
-  harvest_cost = 0
+  refine_cost = 30
   extract_cost = 5
   grow_cost = 15
   fertilize_cost = 20
   reap_cost = 5
-  cost_dict = {"chop":chop_cost, "cultivate":cultivate_cost, "harvest":harvest_cost, "extract":extract_cost, "grow":grow_cost, "fertilize":fertilize_cost, "reap":reap_cost}
+  cost_dict = {"chop":chop_cost, "cultivate":cultivate_cost, "refine":refine_cost, "extract":extract_cost, "grow":grow_cost, "fertilize":fertilize_cost, "reap":reap_cost}
   #player_action icons
   chop_img = pygame.image.load("player actions/chop.png").convert_alpha()
   cultivate_img = pygame.image.load("player actions/cultivate.png").convert_alpha()
-  harvest_img = pygame.image.load("player actions/harvest.png").convert_alpha()
+  refine_img = pygame.image.load("player actions/refine.png").convert_alpha()
   extract_img = pygame.image.load("player actions/extract.png").convert_alpha()
   grow_img = pygame.image.load("player actions/grow.png").convert_alpha()
   fertilize_img = pygame.image.load("player actions/fertilize.png").convert_alpha()
   reap_img = pygame.image.load("player actions/reap.png").convert_alpha()
-  img_dict = {"chop":chop_img, "cultivate":cultivate_img, "harvest":harvest_img, "extract":extract_img, "grow":grow_img, "fertilize":fertilize_img, "reap":reap_img}
+  img_dict = {"chop":chop_img, "cultivate":cultivate_img, "refine":refine_img, "extract":extract_img, "grow":grow_img, "fertilize":fertilize_img, "reap":reap_img}
   def __init__(self, player_number: int):
     #player number determines the order the players play in starting from 0 not 1
     self.player_number = player_number
@@ -355,6 +359,7 @@ class Player:
     self.wood = 10000 #0
     self.metal = 10000 #0
     self.food = 10000 #0
+    self.water = 10000 #0
     self.units = []
     self.buildings = []
     self.cities = []
@@ -476,8 +481,8 @@ class Player:
     elif action == "cultivate":
       if "crop" in location.features:
         return True
-    elif action == "harvest":
-      if "seaweed" in location.features:
+    elif action == "refine":
+      if "mineral" in location.features:
         return True
     elif action == "extract":
       if "ore" in location.features:
@@ -507,9 +512,9 @@ class Player:
       self.food += 3
       location.features.remove("crop")
       location.features.append("harvested crop")
-    elif action == "harvest":
-      self.money += 10
-      location.features.remove("seaweed")
+    elif action == "refine":
+      self.metal += 20
+      location.features.remove("mineral")
     elif action == "extract":
       self.metal += 10
       location.features.remove("ore")
@@ -591,11 +596,11 @@ class Unit(Entity):
   shieldman_img = pygame.image.load("unit/shieldman.png").convert_alpha()
   archer_img = pygame.image.load("unit/archer.png").convert_alpha()
   crossbowman_img = pygame.image.load("unit/crossbowman.png").convert_alpha()
-  medic_img = pygame.image.load("unit/medic.png").convert_alpha()
+  field_medic_img = pygame.image.load("unit/field medic.png").convert_alpha()
   ship_img = pygame.image.load("unit/ship.png").convert_alpha()
   steeler_img = pygame.image.load("unit/steeler.png").convert_alpha()
   unit_max_stack = 3
-  img_dict = {"Man":man_img, "Rider":rider_img, "Knight":knight_img, "Elephant":elephant_img, "Swordsman":swordsman_img, "Spearman":spearman_img, "Axeman":axeman_img, "Shieldman":shieldman_img, "Archer":archer_img, "Crossbowman":crossbowman_img, "Medic":medic_img, "Ship":ship_img, "Steeler":steeler_img}
+  img_dict = {"Man":man_img, "Rider":rider_img, "Knight":knight_img, "Elephant":elephant_img, "Swordsman":swordsman_img, "Spearman":spearman_img, "Axeman":axeman_img, "Shieldman":shieldman_img, "Archer":archer_img, "Crossbowman":crossbowman_img, "Field Medic":field_medic_img, "Ship":ship_img, "Steeler":steeler_img}
   def __init__(self, stats: List[Any], coords: Tuple[int, int], player_number, current_health: int = 0):
     self.name = stats[0]
     super().__init__(player_number, coords, pygame.image.load("unit/"+str(self.name).lower()+".png").convert_alpha())
@@ -1064,7 +1069,7 @@ shieldman = ["Shieldman", 15, 5, 6, 4, 1, 1, [3, 10, 1], 10, [["move"], ["attack
 #catapult can move 1 or attack 1
 archer = ["Archer", 8, 4, 7, 1, 2, 2, [3, 0, 0], 14, [["attack", "move"], ["move", "heal"]], []]
 crossbowman = ["Crossbowman", 5, 2, 15, 1, 3, 2, [10, 5, 3], 17, [["move", "attack"], ["attack", "move"], ["heal"]], []]
-medic = ["Medic", 10, 10, 0, 2, 1, 1, [3, 1, 2], 8, [["move", "heal other"], ["move", "heal"]], []]
+field_medic = ["Field Medic", 10, 10, 0, 2, 1, 1, [3, 1, 2], 8, [["move", "heal other"], ["move", "heal"]], []]
 rider = ["Rider", 9, 5, 7, 2, 1, 3, [0, 0, 3], 12, [["move", "attack"], ["move", "heal"]], []]
 knight = ["Knight", 13, 6, 7, 1, 1, 3, [2, 4, 6], 18, [["move", "attack"], ["attack", "move"], ["heal"]], []]
 elephant = ["Elephant", 18, 6, 15, 2, 1, 3, [5, 3, 10], 30, [["move", "attack", "heal"]], []]
@@ -1097,7 +1102,7 @@ forestry = ["Forestry", 10, (250, 300), logging, None, lumber_hut, None, None, N
 reforestation_img = pygame.image.load("tech/reforestation.png").convert_alpha()
 reforestation = ["Reforestation", 20, (100, 0), trekking, None, None, None, "grow", None, reforestation_img]
 medicine_img = pygame.image.load("tech/medicine.png").convert_alpha()
-medicine = ["Medicine", 20, (150, 100), forestry, medic, None, None, None, None, medicine_img]
+medicine = ["Medicine", 20, (150, 100), forestry, field_medic, None, None, None, None, medicine_img]
 climbing_img = pygame.image.load("tech/climbing.png").convert_alpha()
 climbing = ["Climbing", 5, (350, 500), None, None, None, None, None, "mountain", climbing_img]
 smithery_img = pygame.image.load("tech/smithery.png").convert_alpha()
@@ -1122,8 +1127,8 @@ trade_img = pygame.image.load("tech/trade.png").convert_alpha()
 trade = ["Trade", 10, (650, 300), swimming, None, market, None, None, None, trade_img]
 economics_img = pygame.image.load("tech/economics.png").convert_alpha()
 economics = ["Economics", 15, (650, 50), trade, None, None, port, None, None, economics_img]
-aquaculture_img = pygame.image.load("tech/aquaculture.png").convert_alpha()
-aquaculture = ["Aquaculture", 10, (600, 150), trade, None, None, None, "harvest", None, aquaculture_img]
+refinement_img = pygame.image.load("tech/refinement.png").convert_alpha()
+refinement = ["Refinement", 10, (600, 150), trade, None, None, None, "refine", None, refinement_img]
 cultivation_img = pygame.image.load("tech/cultivation.png").convert_alpha()
 cultivation = ["Cultivation", 5, (800, 500), None, None, None, None, "cultivate", None, cultivation_img]
 riding_img = pygame.image.load("tech/riding.png").convert_alpha()
@@ -1140,7 +1145,7 @@ fertilization_img = pygame.image.load("tech/fertilization.png").convert_alpha()
 fertilization = ["Fertilization", 20, (825, 150), farming, None, None, None, "fertilize", None, fertilization_img]
 overharvesting_img = pygame.image.load("tech/overharvesting.png").convert_alpha()
 overharvesting = ["Overharvesting", 20, (950, 300), cultivation, None, None, None, "reap", None, overharvesting_img]
-all_techs = [logging, trekking, archery, engineering, forestry, reforestation, medicine, climbing, smithery, sharpening, armoring, molding, mining, smelting, extraction, swimming, sailing, trade, economics, aquaculture, cultivation, riding, honor, taming, farming, agriculture, fertilization, overharvesting]
+all_techs = [logging, trekking, archery, engineering, forestry, reforestation, medicine, climbing, smithery, sharpening, armoring, molding, mining, smelting, extraction, swimming, sailing, trade, economics, refinement, cultivation, riding, honor, taming, farming, agriculture, fertilization, overharvesting]
 
 class Animation:
   animating = False
@@ -1287,7 +1292,7 @@ for _ in Player.player_list:
 #for testing:
 '''Player.player_list[0].available_actions.append("chop")
 Player.player_list[0].available_actions.append("cultivate")
-Player.player_list[0].available_actions.append("harvest")
+Player.player_list[0].available_actions.append("refine")
 Player.player_list[0].available_actions.append("grow")'''
 '''Player.player_list[0].units.append(Unit(man, 3, 3))
 Player.player_list[0].units.append(Unit(man, 4, 4))
