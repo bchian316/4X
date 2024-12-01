@@ -1,4 +1,3 @@
-# employ the new resourceAnimationcoords function
 # if there's a weird bug, try switching the for loop iterable variable from _ to something else
 #maybe that'll help
 #if action_sequence is [], turn_done is false
@@ -203,13 +202,13 @@ class Location:
     if self.deposit != (0, 0, 0, 0):
       animation_coords = (coordConvert(self.coords, returnCenter=True)[0]+offset_x, coordConvert(self.coords, returnCenter=True)[1]+offset_y)
       for _ in range(self.deposit[0]):
-        Animation._list.append(resourceAnimation("wood", (randint(round(animation_coords[0]-resourceAnimation.animation_range/2), round(animation_coords[0]+resourceAnimation.animation_range/2)), randint(round(animation_coords[1]-resourceAnimation.animation_range/2), round(animation_coords[1]+resourceAnimation.animation_range/2))), (SCREENLENGTH - 12.5, 87.5), 25, wood_resource_img))
+        Animation._list.append(resourceAnimation("wood", resourceAnimationCoords(animation_coords, entity_size=Building.building_size), (SCREENLENGTH - 12.5, 87.5), 25))
       for _ in range(self.deposit[1]):
-        Animation._list.append(resourceAnimation("metal", (randint(round(animation_coords[0]-resourceAnimation.animation_range/2), round(animation_coords[0]+resourceAnimation.animation_range/2)), randint(round(animation_coords[1]-resourceAnimation.animation_range/2), round(animation_coords[1]+resourceAnimation.animation_range/2))), (SCREENLENGTH - 12.5, 112.5), 25, metal_resource_img))
+        Animation._list.append(resourceAnimation("metal", resourceAnimationCoords(animation_coords, entity_size=Building.building_size), (SCREENLENGTH - 12.5, 112.5), 25))
       for _ in range(self.deposit[2]):
-        Animation._list.append(resourceAnimation("food", (randint(round(animation_coords[0]-resourceAnimation.animation_range/2), round(animation_coords[0]+resourceAnimation.animation_range/2)), randint(round(animation_coords[1]-resourceAnimation.animation_range/2), round(animation_coords[1]+resourceAnimation.animation_range/2))), (SCREENLENGTH - 12.5, 137.5), 25, food_resource_img))
+        Animation._list.append(resourceAnimation("food", resourceAnimationCoords(animation_coords, entity_size=Building.building_size), (SCREENLENGTH - 12.5, 137.5), 25))
       for _ in range(self.deposit[3]):
-        Animation._list.append(resourceAnimation("water", (randint(round(animation_coords[0]-resourceAnimation.animation_range/2), round(animation_coords[0]+resourceAnimation.animation_range/2)), randint(round(animation_coords[1]-resourceAnimation.animation_range/2), round(animation_coords[1]+resourceAnimation.animation_range/2))), (SCREENLENGTH - 12.5, 162.5), 25, water_resource_img))
+        Animation._list.append(resourceAnimation("water", resourceAnimationCoords(animation_coords, entity_size=Building.building_size), (SCREENLENGTH - 12.5, 162.5), 25))
       
       self.deposit = (0, 0, 0, 0)
       
@@ -904,13 +903,13 @@ class Building(Entity):
     if self.production_timer == self.production_time:
       self.production_timer = 0
       for _ in range(self.production[0]):
-        Animation._list.append(resourceAnimation("wood", (randint(round(self.display_coords[0] + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[0] + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_coords[1] + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[1] + offset_y + City.city_size/2 + resourceAnimation.animation_range/2))), (SCREENLENGTH - 12.5, 87.5), 25, wood_resource_img))
+        Animation._list.append(resourceAnimation("wood", resourceAnimationCoords(self.display_coords, entity_size=Building.building_size), (SCREENLENGTH - 12.5, 87.5), 25))
       for _ in range(self.production[1]):
-        Animation._list.append(resourceAnimation("metal", (randint(round(self.display_coords[0] + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[0] + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_coords[1] + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[1] + offset_y + City.city_size/2 + resourceAnimation.animation_range/2))), (SCREENLENGTH - 12.5, 112.5), 25, metal_resource_img))
+        Animation._list.append(resourceAnimation("metal", resourceAnimationCoords(self.display_coords, entity_size=Building.building_size), (SCREENLENGTH - 12.5, 112.5), 25))
       for _ in range(self.production[2]):
-          Animation._list.append(resourceAnimation("food", (randint(round(self.display_coords[0] + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[0] + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_coords[1] + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[1] + offset_y + City.city_size/2 + resourceAnimation.animation_range/2))), (SCREENLENGTH - 12.5, 137.5), 25, food_resource_img))
+        Animation._list.append(resourceAnimation("food", resourceAnimationCoords(self.display_coords, entity_size=Building.building_size), (SCREENLENGTH - 12.5, 137.5), 25))
       for _ in range(self.production[3]):
-        Animation._list.append(resourceAnimation("water", (randint(round(self.display_coords[0] + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[0] + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_coords[1] + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[1] + offset_y + City.city_size/2 + resourceAnimation.animation_range/2))), (SCREENLENGTH - 12.5, 162.5), 25, water_resource_img))
+        Animation._list.append(resourceAnimation("water", resourceAnimationCoords(self.display_coords, entity_size=Building.building_size), (SCREENLENGTH - 12.5, 162.5), 25))
   def display_stats(self, x: int, y: int, text_display_size: int = 20) -> None:
     #change these to imgs later
     text(text_display_size, str(self.name), (0, 0, 0), x + 37.5, y - 15, alignx = "center")
@@ -951,7 +950,7 @@ class City(Entity):
     #run this in the end_turn button clicked
     #add for loop for animation
     for _ in range(self.income):
-      Animation._list.append(resourceAnimation("money", (randint(round(self.display_coords[0] + offset_x + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[0] + offset_x + City.city_size/2 + resourceAnimation.animation_range/2)), randint(round(self.display_coords[1] + offset_y + City.city_size/2 - resourceAnimation.animation_range/2), round(self.display_coords[1] + offset_y + City.city_size/2 + resourceAnimation.animation_range/2))), (SCREENLENGTH - 12.5, 62.5), 25, money_resource_img))
+      Animation._list.append(resourceAnimation("money", resourceAnimationCoords(self.display_coords, entity_size=City.city_size), (SCREENLENGTH - 12.5, 62.5), 25))
   def upgrade(self) -> None:
     self.level += 1
     self.income += 5
@@ -1189,10 +1188,12 @@ class resourceAnimation(Animation):
   #therefore, the lower the number, the faster the object, and vice versa
   animation_range = 80
   img_size = 25
-  def __init__(self, value: str, start: Tuple[int, int], target: Tuple[int, int], targetsize: int, img: pygame.Surface):
-    super().__init__(start, img, resourceAnimation.img_size)
+  img_dict = {"money":money_resource_img, "wood":wood_resource_img, "metal":metal_resource_img, "food":food_resource_img, "water":water_resource_img}
+  def __init__(self, value: str, start: Tuple[int, int], target: Tuple[int, int], targetsize: int):
     #value should be a list containing the resource of the thing
     self.value = value
+    self.img = resourceAnimation.img_dict[self.value]
+    super().__init__(start, self.img, resourceAnimation.img_size)
     self.target = target
     self.targetsize = targetsize
     #make velocity inversely proportional to distance, so if the animation starts farther away, it travels faster
