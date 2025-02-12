@@ -29,8 +29,8 @@ mine = ["Mine", [5, 5, 2, 3], [0, 5, 0, 0], 2, ["mountain"], [], foundry]
 shipyard = ["Shipyard", [4, 3, 5, 7], [0, 0, 0, 5], 1, ["water"], ["shipbuilding"], None]
 pipelines = ["Pipelines", [3, 3, 6, 5], [0, 0, 0, 20], 3, [], [], None]
 aqueduct = ["Aqueduct", [2, 3, 2, 5], [0, 0, 0, 5], 2, ["water"], [], pipelines]
-plantation = ["Plantation", [8, 4, 6, 7], [0, 0, 20, 0], 1, None, ["cultivate"], None]
-farm = ["Farm", [0, 1, 9, 7], [0, 0, 10, 0], 1, ["plains", "forest", "mountain", "water"], ["cultivate"], plantation]
+plantation = ["Plantation", [8, 4, 6, 7], [0, 0, 20, 0], 1, None, [], None]
+farm = ["Farm", [0, 1, 9, 7], [0, 0, 10, 0], 1, ["fertile land"], [], plantation]
 
 #tech = ["Tech", price, x, y, preceding_tech, unit, building, upgraded building, player action, terrain, img]
 logging_img = pygame.image.load("../tech/logging.png").convert_alpha()

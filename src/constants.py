@@ -49,8 +49,8 @@ water_resource_img = pygame.image.load("../resource/water.png").convert_alpha()
 #it will show the terrain of every tile in the game
 #MAP = [4 items, 5 items, 6, 7, 6, 5, 4] because there is a side length of 4
 TERRAIN = [["mountain", "mountain", "mountain", "plains", "water", "water", "ocean", "", "", "", ""], 
-       ["mountain", "mountain", "mountain", "forest", "plains", "water", "ocean", "ocean", "", "", "", "", ""], 
-       ["forest", "mountain", "dense forest", "mountain", "water", "ocean", "ocean", "ocean", "water", "", "", "", ""], 
+       ["mountain", "mountain", "fertile land", "forest", "fertile land", "water", "ocean", "ocean", "", "", "", "", ""], 
+       ["forest", "mountain", "dense forest", "fertile land", "water", "ocean", "ocean", "ocean", "water", "", "", "", ""], 
        ["plains", "mountain", "dense forest", "water", "water", "forest", "plains", "mountain", "ocean", "ocean", "", "", ""], 
        ["water", "forest", "plains", "dense forest", "water", "mountain", "plains", "water", "mountain", "forest", "forest", "", ""], 
        ["dense forest", "water", "plains", "mountain", "plains", "plains", "mountain", "water", "plains", "forest", "plains", "plains", ""],
@@ -64,12 +64,9 @@ TERRAIN = [["mountain", "mountain", "mountain", "plains", "water", "water", "oce
 #this is the side length of the map
 MAP_LENGTH = len(TERRAIN)-1
 #useless for now
-CROP = [(6, 2), (5, 3), (6, 3), (2, 4), (5, 6) ,(12, 6), (6, 7),  (9, 11), (10, 11)]
-HARVESTED_CROP = []
 MINERAL = [(9, 12), (10, 12), (7, 1), (8, 2), (4, 3), (4, 4), (7, 4), (1, 5), (3, 7), (7, 7), (5, 8), (8, 4)]
 ORE = [(7, 2), (0, 3), (5, 4), (5, 5), (6, 6), (11, 6), (7, 9), (9, 9), (10, 9), (7, 11), (9, 11), (12, 12)]
 VILLAGES = [(8, 4), (2, 5), (8, 7), (3, 0), (4, 8), (12, 10), (2, 2)]
-MAP = []
 
 #important variables for formatting and stuff
 selected_object = None
@@ -111,4 +108,3 @@ small_attack_img = pygame.transform.scale(attack_img, (small_icon_size, small_ic
 small_heal_img = pygame.transform.scale(heal_img, (small_icon_size, small_icon_size))
 small_heal_other_img = pygame.transform.scale(heal_other_img, (small_icon_size, small_icon_size))
 skip_action_img = pygame.image.load("../unit actions/skip action.png").convert_alpha()
-

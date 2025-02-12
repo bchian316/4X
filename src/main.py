@@ -27,6 +27,7 @@ from stats import all_techs
 from tech import Tech
 from animations import Animation
 from location import Location
+from map import Map
 from player import Player
 from unit import Unit
 from building import Building
@@ -40,6 +41,8 @@ from city import City
 print(pygame.font.get_fonts())
 #good fonts: harrington, 
 
+MAP = Map()
+MAP.configure_map()
 
 def receive_input(class_object: type) -> Any:
   #run through all objects that can be clicked on based on given type
@@ -64,10 +67,10 @@ def receive_input(class_object: type) -> Any:
             dynamics.btn_pressed_this_frame = True
             return city
     elif class_object == Location:
-      for row in MAP:
+      for row in MAP.map:
         for tile in row:
           if circle_collided(dynamics.mouse_pos[0], dynamics.mouse_pos[1], 1, tile.display_coords[0] + dynamics.offset_x + hex_size*sqrt(3)/4, tile.display_coords[1] + dynamics.offset_y + hex_size/2, selected_collision_range/2):
-            if Location.in_map(tile.coords):
+            if MAP.in_map(tile.coords):
               dynamics.btn_pressed_this_frame = True
               return tile
   return None
@@ -76,16 +79,16 @@ def alternate_selection(object) -> Any:
   #this alternates the parameter object
   for object_type in selection_order[selection_order.index(type(object))+1:]:#check the after types
     if object_type == Unit:
-      if return_occupied(object.coords, "unit"):
-        return return_occupied(object.coords, "unit")
+      if MAP.return_tile(object.coords).unit:
+        return MAP.return_tile(object.coords).unit
     elif object_type == Building:
-      if return_occupied(object.coords, "building"):
-        return return_occupied(object.coords, "building")
+      if MAP.return_tile(object.coords).building:
+        return MAP.return_tile(object.coords).building
     elif object_type == City:
-      if return_occupied(object.coords, "city"):
-        return return_occupied(object.coords, "city")
+      if MAP.return_tile(object.coords).city:
+        return MAP.return_tile(object.coords).city
     elif object_type == Location:
-      return MAP[object.coords[1]][object.coords[0]]
+      return MAP.return_tile(object.coords)
     elif object_type == None:
       return None
 
@@ -100,47 +103,27 @@ def upgrade_to_naval(old_unit: Unit, new_unit: Unit) -> Unit:
   return new_unit
 
 
-Location.configure_map()
-
 #change player_count to alter the number of players
 #player_count is the number of players
 player_count = 2
 for _ in range(player_count):
   dynamics.player_list.append(Player(_))
+current_player = dynamics.player_list[dynamics.current_player]
 #starts at 0, so the first player is player 0
-#dynamics.player_list[dynamics.current_player] -> this is a Player class object
 #taking that.units is taking that player's units list
 
 dynamics.player_list[0].color = (0, 255, 255)
 dynamics.player_list[1].color = (255, 0, 0)
 
 #add starting cities
-dynamics.player_list[0].cities.append(City((4, 1), 0))
-dynamics.player_list[1].cities.append(City((9, 10), 1))
-print(VILLAGES)
+dynamics.player_list[0].cities.append(City(MAP.return_tile((4, 1)), (4, 1), 0))
+dynamics.player_list[1].cities.append(City(MAP.return_tile((9, 10)), (9, 10), 1))
 for v in VILLAGES:
-  print(v[0], v[1])
-  dynamics.villages.append(City(v, -1, 0))
-#dynamics.player_list[1].units.append(Unit(man, (4, 2), 1))
-#for testing:
-'''dynamics.player_list[0].available_actions.append("chop")
-dynamics.player_list[0].available_actions.append("cultivate")
-dynamics.player_list[0].available_actions.append("refine")
-dynamics.player_list[0].available_actions.append("grow")'''
-from stats import man
-dynamics.player_list[0].units.append(Unit(man, (11, 11), 0))
-'''dynamics.player_list[0].units.append(Unit(man, 11, 11))
-dynamics.player_list[0].units.append(Unit(man, 4, 4))
-dynamics.player_list[0].units.append(Unit(archer, 3, 5))
+  dynamics.villages.append(City(MAP.return_tile(v), v, -1, 0))
 
-dynamics.player_list[1].units.append(Unit(man, 2, 2))
-dynamics.player_list[0].units.append(Unit(ship, 5, 6))
-dynamics.player_list[0].units.append(Unit(steeler, 6, 7))
-dynamics.player_list[0].units.append(Unit(crossbowman, 1, 1))
-dynamics.player_list[0].units.append(Unit(swordsman, 0, 0))'''
-'''dynamics.player_list[0].available_upgraded_buildings.append(plantation)
-dynamics.player_list[0].buildings.append(Building(shipyard, 4, 5))
-dynamics.player_list[0].buildings.append(Building(mine, 2, 1))'''
+#delete later
+from stats import man
+dynamics.player_list[0].units.append(Unit(MAP.return_tile((11, 11)), man, (11, 11), 0))
 
 while True:
   while dynamics.status == "home":
@@ -162,11 +145,13 @@ while True:
         #you can only click if there is no animation
         dynamics.mouse_clicked = True
     if button(400, 450, 200, 100, 10):
-      #dynamics.player_list[dynamics.current_player].turn_update()
+      dynamics.status = "playing"
+      current_player = dynamics.player_list[dynamics.current_player]
+      #current_player.turn_update()
       #this allows Player1 to get his resources, since you only get resources when the player before you ends turn
       #this makes it equal
       #or we can take this line away because player1 already has advantage of going first, so maybe he shouldn't get resources
-      dynamics.status = "playing"
+      
     clock.tick(FPS)
     pygame.display.update()
 
@@ -211,7 +196,7 @@ while True:
     buttons/options: (units sequences, buildings, buildings upgrades, city upgrades, player actions, etc)'''
 
     #display map
-    Location.display_map_hex(MAP)
+    MAP.display_map_hex()
 
     #display all units, buildings, cities of each player
     for a_player in dynamics.player_list:
@@ -239,11 +224,13 @@ while True:
           screen.blit(foreign_building_select_img, (dynamics.selected_object.display_coords[0] + dynamics.offset_x, dynamics.selected_object.display_coords[1] + dynamics.offset_y))
       elif isinstance(dynamics.selected_object, Location):
         screen.blit(location_img, (dynamics.selected_object.display_coords[0] + dynamics.offset_x, dynamics.selected_object.display_coords[1] + dynamics.offset_y))
-        if return_occupied(dynamics.selected_object.coords, "unit") in dynamics.player_list[dynamics.current_player].units:
-          screen.blit(unit_location_img, (dynamics.selected_object.display_coords[0] + dynamics.offset_x, dynamics.selected_object.display_coords[1] + dynamics.offset_y))
-        elif return_occupied(dynamics.selected_object.coords, "building") in dynamics.player_list[dynamics.current_player].buildings:
+        if dynamics.selected_object.unit and dynamics.selected_object.unit.owned_by_current_player():
           screen.blit(location_select_img, (dynamics.selected_object.display_coords[0] + dynamics.offset_x, dynamics.selected_object.display_coords[1] + dynamics.offset_y))
-        elif return_occupied(dynamics.selected_object.coords, "city") in dynamics.player_list[dynamics.current_player].cities:
+          if not dynamics.selected_object.player_acted_on:
+            screen.blit(unit_location_img, (dynamics.selected_object.display_coords[0] + dynamics.offset_x, dynamics.selected_object.display_coords[1] + dynamics.offset_y))
+        elif dynamics.selected_object.building and dynamics.selected_object.building.owned_by_current_player():
+          screen.blit(location_select_img, (dynamics.selected_object.display_coords[0] + dynamics.offset_x, dynamics.selected_object.display_coords[1] + dynamics.offset_y))
+        elif dynamics.selected_object.city and dynamics.selected_object.city.owned_by_current_player():
           screen.blit(location_select_img, (dynamics.selected_object.display_coords[0] + dynamics.offset_x, dynamics.selected_object.display_coords[1] + dynamics.offset_y))
 
     #create a rect area for selected, targeted, and location
@@ -268,20 +255,21 @@ while True:
     if button(SCREENLENGTH - 100, SCREENHEIGHT - 125, 100, 100, 10):
       #if end_turn button is clicked
       dynamics.selected_object = None
-      dynamics.player_list[dynamics.current_player].turn_update_after()
+      current_player.turn_update_after()
       dynamics.current_player += 1
       if dynamics.current_player == player_count:
         dynamics.current_player = 0
+      current_player = dynamics.player_list[dynamics.current_player]
       print("turn ended... moving on to player", dynamics.current_player)
-      dynamics.player_list[dynamics.current_player].turn_update_before()
+      current_player.turn_update_before()
+      MAP.turn_reset()
     text(25, "End Turn", (0, 0, 0), SCREENLENGTH - 50, SCREENHEIGHT - 75, alignx = "center", aligny = "center")
 
     #display player_number
-    text(25, str("Player " + str(dynamics.current_player + 1)) + " turn", dynamics.player_list[dynamics.current_player].color, SCREENLENGTH, 0, alignx = "right")
-    display_resources([dynamics.player_list[dynamics.current_player].money, dynamics.player_list[dynamics.current_player].wood, dynamics.player_list[dynamics.current_player].metal, dynamics.player_list[dynamics.current_player].food, dynamics.player_list[dynamics.current_player].water], SCREENLENGTH - 25, 50, display_all = True, size = 40)
+    text(25, str("Player " + str(dynamics.current_player + 1)) + " turn", current_player.color, SCREENLENGTH, 0, alignx = "right")
+    display_resources([current_player.money, current_player.wood, current_player.metal, current_player.food, current_player.water], SCREENLENGTH - 25, 50, display_all = True, size = 40)
 
-    #these are all the possible things a player can do: choose unit action, upgrade building, build ships, spawn units, upgrade city, do player actions
-    #choose unit sequence
+    #can only choose unit sequence or do actions if unit turn is not over
     if isinstance(dynamics.selected_object, Unit) and dynamics.selected_object.owned_by_current_player() and not dynamics.selected_object.turn_done:
       #if u own the selected unit and his turn isn't done
       if dynamics.selected_object.action_sequence == []:
@@ -292,7 +280,7 @@ while True:
             #dynamics.selected_object.action = dynamics.selected_object.action_sequence[0]
             dynamics.selected_object.action_index = -1
             dynamics.selected_object.action_range = [dynamics.selected_object.coords]
-            dynamics.selected_object.next_action()
+            dynamics.selected_object.next_action(MAP)
             print(dynamics.selected_object.action_sequence)
             break
           display_action_sequence(choice[1], -1, 0, option_x + choice[0] * 50, mini = True)
@@ -303,63 +291,46 @@ while True:
           pygame.draw.circle(screen, (255, 255, 0), (hint_x + dynamics.offset_x, hint_y + dynamics.offset_y), 10)
         display_action_sequence(dynamics.selected_object.action_sequence, dynamics.selected_object.action_index, 0, 300)
         if dynamics.selected_object.action == "move":
-          dynamics.selected_object.do_action(receive_input(Location))
+          dynamics.selected_object.do_action(receive_input(Location), MAP)
         elif dynamics.selected_object.action == "attack":
-          dynamics.selected_object.do_action(receive_input(Unit))
+          dynamics.selected_object.do_action(receive_input(Unit), MAP)
         elif dynamics.selected_object.action == "heal":
-          dynamics.selected_object.do_action(receive_input(Unit))
+          dynamics.selected_object.do_action(receive_input(Unit), MAP)
         elif dynamics.selected_object.action == "heal other":
-          dynamics.selected_object.do_action(receive_input(Unit))
+          dynamics.selected_object.do_action(receive_input(Unit), MAP)
         if button(25, 175, 125, 125, 10):
-          dynamics.selected_object.next_action()
+          dynamics.selected_object.next_action(MAP)
         screen.blit(skip_action_img, (50, 212.5))
         text(25, "Skip Action", (0, 0, 0), 87.5, 200, alignx = "center", aligny = "center")
     #unit upgrade building
     elif isinstance(dynamics.selected_object, Building) and dynamics.selected_object.owned_by_current_player():
-      if return_occupied(dynamics.selected_object.coords, object = "unit") in dynamics.player_list[dynamics.current_player].units:
+      if current_player.owns_unit_there(MAP.return_tile(dynamics.selected_object.coords)):
         #upgrade a building if there's a dude on it
-        if dynamics.selected_object.upgraded_building in dynamics.player_list[dynamics.current_player].available_upgraded_buildings:
+        if dynamics.selected_object.upgraded_building in current_player.available_upgraded_buildings:
           #if there is no upgraded building, it would be: if None in available buildings, so that would be false
-          if button(25, 200, Building.building_size*2, Building.building_size*2, 10, available = bool(dynamics.player_list[dynamics.current_player].wood >= dynamics.selected_object.upgraded_building[1][0] and dynamics.player_list[dynamics.current_player].metal >= dynamics.selected_object.upgraded_building[1][1] and dynamics.player_list[dynamics.current_player].food >= dynamics.selected_object.upgraded_building[1][2])):
-            dynamics.selected_object.upgrade()
-            dynamics.player_list[dynamics.current_player].deduct_costs(dynamics.selected_object.cost)
+          if button(25, 200, Building.building_size*2, Building.building_size*2, 10, available = bool(current_player.wood >= dynamics.selected_object.upgraded_building[1][0] and current_player.metal >= dynamics.selected_object.upgraded_building[1][1] and current_player.food >= dynamics.selected_object.upgraded_building[1][2])):
+            dynamics.selected_object.upgrade(MAP.return_tile(dynamics.selected_object.coords))
+            current_player.deduct_costs(dynamics.selected_object.cost)
           if dynamics.selected_object.upgraded_building != None:
             screen.blit(Building.img_dict[dynamics.selected_object.upgraded_building[0]], (37.5, 262.5))
             text(20, dynamics.selected_object.upgraded_building[0], (0, 0, 0), 75, 250, alignx = "center", aligny = "center")
             display_resources([0] + dynamics.selected_object.upgraded_building[1], 150, 237.5)
           text(25, "Upgrade", (0, 0, 0), 100, 225, alignx = "center", aligny = "center")
-      #build ships
-      if "shipbuilding" in dynamics.selected_object.abilities:
-        if return_occupied(dynamics.selected_object.coords, "unit") and "float" not in return_occupied(dynamics.selected_object.coords, "unit").abilities:
-          #upgrade to ship if there is a dude is on it and the dude is not a ship
-          for unit_type in enumerate(dynamics.player_list[dynamics.current_player].available_naval_units):
-            if button((Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2), Unit.unit_size * 2, Unit.unit_size * 2, 10, available = bool(dynamics.player_list[dynamics.current_player].wood >= unit_type[1][7][0] and dynamics.player_list[dynamics.current_player].metal >= unit_type[1][7][1] and dynamics.player_list[dynamics.current_player].food >= unit_type[1][7][2])):
-              print(unit_type[1][0] + " naval unit is spawned")
-              dynamics.player_list[dynamics.current_player].deduct_costs(unit_type[1][7])
-              old_unit_index = dynamics.player_list[dynamics.current_player].units.index(return_occupied(dynamics.selected_object.coords, "unit"))
-              #create a new naval unit with the correctly altered stats using the old unit and the naval unit stats
-              #replace old unit with new unit
-              dynamics.player_list[dynamics.current_player].units[old_unit_index] = upgrade_to_naval(dynamics.player_list[dynamics.current_player].units[old_unit_index], Unit(unit_type[1], dynamics.selected_object.coords, dynamics.current_player))
-              dynamics.player_list[dynamics.current_player].units[old_unit_index].unit_reset()
-              del(old_unit_index)
-              print("turn done")
-            screen.blit(Unit.img_dict[unit_type[1][0]], (0, option_x + 25 + unit_type[0] * 50))
-            text(20, unit_type[1][0], (0, 0, 0), (Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2))
-            display_resources([0] + unit_type[1][7], (Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack) + 75, option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2) + 12.5)
-    #spawn new unit
+      #spawn new unit
     elif isinstance(dynamics.selected_object, City) and dynamics.selected_object.owned_by_current_player():
-      if not return_occupied(dynamics.selected_object.coords, "unit"):
+      if MAP.return_tile(dynamics.selected_object.coords).unit == None:
       #if a city is selected and there's no dude on it to avoid spawning more than 1 dude
-        for unit_type in enumerate(dynamics.player_list[dynamics.current_player].available_units):
+        for unit_type in enumerate(current_player.available_units):
           if dynamics.selected_object.spawn_timer < dynamics.selected_object.max_spawn_timer:
-            if button((Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2), Unit.unit_size * 2, Unit.unit_size * 2, 10, available = bool(dynamics.player_list[dynamics.current_player].wood >= unit_type[1][7][0] and dynamics.player_list[dynamics.current_player].metal >= unit_type[1][7][1] and dynamics.player_list[dynamics.current_player].food >= unit_type[1][7][2])):
+            if button((Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2), Unit.unit_size * 2, Unit.unit_size * 2, 10, available = bool(current_player.wood >= unit_type[1][7][0] and current_player.metal >= unit_type[1][7][1] and current_player.food >= unit_type[1][7][2])):
               print(unit_type[1][0] + " unit is spawned")
-              dynamics.player_list[dynamics.current_player].deduct_costs(unit_type[1][7])
+              current_player.deduct_costs(unit_type[1][7])
               #add spawn_cooldown to city
               dynamics.selected_object.spawn_timer += unit_type[1][8]
-              dynamics.player_list[dynamics.current_player].units.append(Unit(unit_type[1], dynamics.selected_object.coords, dynamics.current_player))
-              dynamics.player_list[dynamics.current_player].units[-1].unit_reset()
-              print("turn done")
+              new_unit = Unit(MAP.return_tile(dynamics.selected_object.coords), unit_type[1], dynamics.selected_object.coords, dynamics.current_player)
+              current_player.units.append(new_unit)
+              new_unit.unit_reset()
+              del(new_unit)
           else:
             pygame.draw.rect(screen, (255, 0, 0), ((Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2), Unit.unit_size * 2, Unit.unit_size * 2), width = 0, border_radius = 10)
           screen.blit(Unit.img_dict[unit_type[1][0]], ((Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2) + 25))
@@ -367,7 +338,7 @@ while True:
           display_resources([0] + unit_type[1][7], (Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack) + 75, option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2) + 12.5)
       #upgrade button
       if dynamics.selected_object.level < City.max_level:
-        if button(25, 200, City.city_size*2, City.city_size*2, 10, available = bool(dynamics.player_list[dynamics.current_player].money >= dynamics.selected_object.cost[0] and dynamics.player_list[dynamics.current_player].wood >= dynamics.selected_object.cost[1] and dynamics.player_list[dynamics.current_player].metal >= dynamics.selected_object.cost[2] and dynamics.player_list[dynamics.current_player].food >= dynamics.selected_object.cost[2]), acolor = (224, 224, 34), hcolor = (140, 140, 3)):
+        if button(25, 200, City.city_size*2, City.city_size*2, 10, available = bool(current_player.money >= dynamics.selected_object.cost[0] and current_player.wood >= dynamics.selected_object.cost[1] and current_player.metal >= dynamics.selected_object.cost[2] and current_player.food >= dynamics.selected_object.cost[2]), acolor = (224, 224, 34), hcolor = (140, 140, 3)):
           dynamics.selected_object.upgrade()
         screen.blit(dynamics.selected_object.image, (37.5, 250))
         screen.blit(City.upgrade_img, (37.5, 250))
@@ -381,31 +352,31 @@ while True:
       #run through available buildings and player actions
       #selected object is a location
       #build new building
-      for building_type in enumerate(dynamics.player_list[dynamics.current_player].available_buildings):
+      for building_type in enumerate(current_player.available_buildings):
         #a_building_type is a list containing the stats of a building
-        if not bool(return_occupied(dynamics.selected_object.coords, object = "building")) and return_occupied(dynamics.selected_object.coords, object = "unit") in dynamics.player_list[dynamics.current_player].units and dynamics.selected_object.terrain in building_type[1][4] and not bool(return_occupied(dynamics.selected_object.coords, object = "city")):
+        if dynamics.selected_object.building == None and dynamics.selected_object.city == None and current_player.owns_unit_there(dynamics.selected_object) and dynamics.selected_object.terrain in building_type[1][4]:
           #if there is no other building there and u own a dude that is there and the terrain is in the building's terrain list and there is no city there
-          if bool("cultivate" in building_type[1][5] and bool("crop" in dynamics.selected_object.features or "harvested crop" in dynamics.selected_object.features)) or bool(not "cultivate" in building_type[1][5]):
-            #if the building is a cultivating building and it is on a crop/harvested crop or the building is not a cultivating building
-            if button(SCREENLENGTH - Building.building_size*2, 200 + building_type[0] * (Building.building_size*2), Building.building_size*2, Building.building_size*2, 10, stroke = 0, available = bool(dynamics.player_list[dynamics.current_player].wood >= building_type[1][1][0] and dynamics.player_list[dynamics.current_player].metal >= building_type[1][1][1] and dynamics.player_list[dynamics.current_player].food >= building_type[1][1][2] and dynamics.player_list[dynamics.current_player].water >= building_type[1][1][3])):
-              #build building and subtract resources
-              print(building_type[1][0] + " is built")
-              dynamics.player_list[dynamics.current_player].deduct_costs(building_type[1][1])
-              dynamics.player_list[dynamics.current_player].buildings.append(Building(building_type[1], dynamics.selected_object.coords, dynamics.current_player))
-            #display the building images on the buttons
-            screen.blit(Building.img_dict[building_type[1][0]], (SCREENLENGTH - Building.building_size*2 + 25, 250 + building_type[0] * (Building.building_size*2)))
-            text(20, building_type[1][0], (0, 0, 0), SCREENLENGTH - 150, 200 + building_type[0] * (Building.building_size*2))
-            text(20, "Terrain: " + ", ".join(building_type[1][4]), (0, 0, 0), SCREENLENGTH - 150, 210 + building_type[0] * (Building.building_size*2))
-            display_resources([0] + building_type[1][1], SCREENLENGTH - 25, 250 + building_type[0] * (Building.building_size*2))
+          if button(SCREENLENGTH - Building.building_size*2, 200 + building_type[0] * (Building.building_size*2), Building.building_size*2, Building.building_size*2, 10, stroke = 0, available = bool(current_player.wood >= building_type[1][1][0] and current_player.metal >= building_type[1][1][1] and current_player.food >= building_type[1][1][2] and current_player.water >= building_type[1][1][3])):
+            #build building and subtract resources
+            print(building_type[1][0] + " is built")
+            current_player.deduct_costs(building_type[1][1])
+            new_building = Building(dynamics.selected_object, building_type[1], dynamics.selected_object.coords, dynamics.current_player)
+            current_player.buildings.append(new_building)
+            del(new_building)
+          #display the building images on the buttons
+          screen.blit(Building.img_dict[building_type[1][0]], (SCREENLENGTH - Building.building_size*2 + 25, 250 + building_type[0] * (Building.building_size*2)))
+          text(20, building_type[1][0], (0, 0, 0), SCREENLENGTH - 150, 200 + building_type[0] * (Building.building_size*2))
+          text(20, "Terrain: " + ", ".join(building_type[1][4]), (0, 0, 0), SCREENLENGTH - 150, 210 + building_type[0] * (Building.building_size*2))
+          display_resources([0] + building_type[1][1], SCREENLENGTH - 25, 250 + building_type[0] * (Building.building_size*2))
 
       #do player action    
-      for player_action in enumerate(dynamics.player_list[dynamics.current_player].available_actions):
+      for player_action in enumerate(current_player.available_actions):
         #doing a player action
-        if dynamics.player_list[dynamics.current_player].player_action_eligible(player_action[1], dynamics.selected_object) and return_occupied(dynamics.selected_object.coords, object = "unit") in dynamics.player_list[dynamics.current_player].units and not bool(return_occupied(dynamics.selected_object.coords, object = "building")) and not bool(return_occupied(dynamics.selected_object.coords, object = "city")):
+        if not dynamics.selected_object.player_acted_on and current_player.player_action_eligible(player_action[1], dynamics.selected_object) and current_player.owns_unit_there(dynamics.selected_object) and dynamics.selected_object.building == None and dynamics.selected_object.city == None:
           #if you own a dude there and there is no building there (to avoid chopping forest where there is a lumber hut) and there is no city there
           #can't do player action when there's a building there
-          if button(player_action_x + player_action[0] * player_action_size, player_action_y, player_action_size, player_action_size, 20, available = bool(dynamics.player_list[dynamics.current_player].money >= Player.cost_dict[player_action[1]])):
-            dynamics.player_list[dynamics.current_player].player_action(player_action[1], dynamics.selected_object, Player.cost_dict[player_action[1]])
+          if button(player_action_x + player_action[0] * player_action_size, player_action_y, player_action_size, player_action_size, 20, available = bool(current_player.money >= Player.cost_dict[player_action[1]])):
+            current_player.player_action(player_action[1], dynamics.selected_object, Player.cost_dict[player_action[1]])
           screen.blit(Player.img_dict[player_action[1]], (player_action_x + player_action[0] * player_action_size, player_action_y))
           text(25, player_action[1].capitalize(), (0, 0, 0), (player_action_x + player_action_size/2) + (player_action[0] * player_action_size), player_action_y - 10, alignx = "center")
           text(50, str(Player.cost_dict[player_action[1]]), money_color, (player_action_x + player_action_size/2) + (player_action[0] * player_action_size), player_action_y + 25, alignx = "center")          
@@ -468,21 +439,21 @@ while True:
 
     if button(0, 0, 50, 50, 10):
       dynamics.status = "playing"
-      if isinstance(dynamics.selected_object, Unit) and dynamics.selected_object in dynamics.player_list[dynamics.current_player].units and dynamics.selected_object.action_sequence != []:
-        dynamics.selected_object.calculate_action_range()
+      if isinstance(dynamics.selected_object, Unit) and dynamics.selected_object in current_player.units and dynamics.selected_object.action_sequence != []:
+        dynamics.selected_object.calculate_action_range(MAP)
     
-    text(25, str("Player " + str(dynamics.current_player + 1)) + " turn", dynamics.player_list[dynamics.current_player].color, SCREENLENGTH, 0, alignx = "right")
-    display_resources([dynamics.player_list[dynamics.current_player].money, dynamics.player_list[dynamics.current_player].wood, dynamics.player_list[dynamics.current_player].metal, dynamics.player_list[dynamics.current_player].food, dynamics.player_list[dynamics.current_player].food, dynamics.player_list[dynamics.current_player].water], SCREENLENGTH - 25, 50, display_all = True)
+    text(25, str("Player " + str(dynamics.current_player + 1)) + " turn", current_player.color, SCREENLENGTH, 0, alignx = "right")
+    display_resources([current_player.money, current_player.wood, current_player.metal, current_player.food, current_player.food, current_player.water], SCREENLENGTH - 25, 50, display_all = True)
     
     for a_tech in all_techs:
       #a_tech is a list of the tech stats, not a class object, therefore, a_tech[0] is the name, a_tech[1] is the cost, a_tech[4] is the preceding tech
-      if a_tech[3] == None or a_tech[3][0] in dynamics.player_list[dynamics.current_player].techs:
+      if a_tech[3] == None or a_tech[3][0] in current_player.techs:
         #if there is no tech that precedes a_tech, or if the player owns the preceding tech, tech is available to buy
-        if a_tech[0] not in dynamics.player_list[dynamics.current_player].techs:
+        if a_tech[0] not in current_player.techs:
           #if the player does not own the tech
-          if button(a_tech[2][0] + dynamics.tech_offset_x, a_tech[2][1] + dynamics.tech_offset_y, Tech.tech_size, Tech.tech_size, 10, available = dynamics.player_list[dynamics.current_player].money >= a_tech[1]):
+          if button(a_tech[2][0] + dynamics.tech_offset_x, a_tech[2][1] + dynamics.tech_offset_y, Tech.tech_size, Tech.tech_size, 10, available = current_player.money >= a_tech[1]):
           #owns_tech will compare names of the tech, archery[3][0] == "Logging"
-            dynamics.player_list[dynamics.current_player].money -= a_tech[1]
+            current_player.money -= a_tech[1]
             Tech(a_tech, dynamics.current_player)
             print("tech bought")
         else:

@@ -9,12 +9,9 @@ class Location:
   mountain_img = pygame.image.load("../terrain/mountain.png").convert_alpha()
   dense_forest_img = pygame.image.load("../terrain/dense forest.png").convert_alpha()
   fertile_land_img = pygame.image.load("../terrain/fertile land.png").convert_alpha()
-  img_dict = {"plains":plains_img, "forest":forest_img, "water":water_img, "ocean":ocean_img, "mountain":mountain_img, "dense forest":dense_forest_img}
-  crop_img = pygame.image.load("../terrain/crop.png").convert_alpha()
-  harvested_crop_img = pygame.image.load("../terrain/harvested crop.png").convert_alpha()
+  img_dict = {"plains":plains_img, "forest":forest_img, "water":water_img, "ocean":ocean_img, "mountain":mountain_img, "dense forest":dense_forest_img, "fertile land":fertile_land_img}
   mineral_img = pygame.image.load("../terrain/mineral.png").convert_alpha()
   ore_img = pygame.image.load("../terrain/ore.png").convert_alpha()
-  village_img = pygame.image.load("../terrain/village.png").convert_alpha()
   deposit_x = 15
   deposit_y = 15
   def __init__(self, coords: Tuple[int, int], terrain: str, features: List[str], deposit: Tuple[int, int, int, int]):
@@ -25,6 +22,11 @@ class Location:
     self.coords = coords
     self.display_coords = coordConvert(self.coords, returnCenter = False)
     self.deposit = deposit
+    self.player_acted_on = False
+    #these are references to entities that are located on the unit
+    self.unit = None
+    self.building = None
+    self.city = None
 
   def display(self) -> None:
     
@@ -34,10 +36,6 @@ class Location:
       screen.blit(self.image, coords)
     except:
       pass
-    if "crop" in self.features:
-      screen.blit(Location.crop_img, coords)
-    elif "harvested crop" in self.features:
-      screen.blit(Location.harvested_crop_img, coords)
     if "mineral" in self.features:
       screen.blit(Location.mineral_img, coords)
     if "ore" in self.features:
@@ -68,72 +66,4 @@ class Location:
         dynamics.animation_list.append(resourceAnimation("food", resourceAnimation.resourceAnimationCoords(self.coords), (SCREENLENGTH - 12.5, 137.5), 25))
       for _ in range(self.deposit[3]):
         dynamics.animation_list.append(resourceAnimation("water", resourceAnimation.resourceAnimationCoords(self.coords), (SCREENLENGTH - 12.5, 162.5), 25))
-      
       self.deposit = (0, 0, 0, 0)
-  def display_map_hex(map: List[List['Location']]) -> None:
-    #use offsets to move the entire map around
-    for row in map:
-      for tile in row:
-        #coords[0] and coords[1] are the coordinates of the tile in the map, not the screen blit coords
-        #the map is a list of lists, so the first list is the first row, the second list is the second row
-        #the first item in the list is the first tile, the second item is the second tile, etc.
-        #display_coords[0] and display_coords[1] will be the screen blit coords of the tile
-        tile.display()
-
-  def return_Adjacent_hex(coords: Tuple[int, int]) -> List[Tuple[int, int]]:
-    #returns a list of all the adjacent hexes based on one hex
-    #the items returned are x and y coords to be used on the map
-    return [(coords[0]-1, coords[1]-1), (coords[0], coords[1]-1), (coords[0]-1, coords[1]), (coords[0]+1, coords[1]), (coords[0], coords[1]+1), (coords[0]+1, coords[1]+1)]
-    #adjacent_hexes has the coordinates of all the adjacent hexes, not their terrain stuff
-    #u can call the terrain manually
-
-  def shadeTile(coords: Tuple[int, int], color: Tuple[int, int, int]) -> None:
-    #coords[0] and coords[1] are coordinates, not display coordinates
-    center_x = (coords[1] - 1)*(-hex_size/4)*sqrt(3)
-    center_y = (coords[1] - 1)*(hex_size*0.75)
-    center_x += (coords[0] - 1)*(hex_size/2)*sqrt(3)
-    #allocate for image size (off of hex_side)
-    center_x += ((hex_size/2)*sqrt(3))/2
-    center_y += hex_size/2
-    #add offsets
-    center_x += dynamics.offset_x
-    center_y += dynamics.offset_y
-    #(display_coords[0], display_coords[1]) will be the center of the corresponding hex
-    #points go clockwise from the top-left vertex
-    point1 = (center_x - hex_size*sqrt(3)/4, center_y - hex_size/4)
-    point2 = (center_x, center_y - hex_size/2)
-    point3 = (center_x + hex_size*sqrt(3)/4, center_y - hex_size/4)
-    point4 = (center_x + hex_size*sqrt(3)/4, center_y + hex_size/4)
-    point5 = (center_x, center_y + hex_size/2)
-    point6 = (center_x - hex_size*sqrt(3)/4, center_y + hex_size/4)
-    pygame.draw.polygon(transparent_screen, color, [point1, point2, point3, point4, point5, point6])
-  def configure_map() -> None:
-    #set or reset map (just in case we need to reset entire map for some reason)
-    MAP.clear()
-    for row in enumerate(TERRAIN):
-      coordy = row[0]
-      MAP.append([])
-      for tile in enumerate(row[1]):
-        coordx = tile[0]
-        features = []
-        if (coordx, coordy) in CROP:
-          features.append("crop")
-        if (coordx, coordy) in HARVESTED_CROP:
-          features.append("harvested crop")
-        if (coordx, coordy) in MINERAL:
-          features.append("mineral")
-        if (coordx, coordy) in ORE:
-          features.append("ore")
-        if randint(1, 10) == 1 and tile[1] != "":
-          deposit = (randint(0, 5), randint(0, 5), randint(0, 5), randint(0, 5))
-        else:
-          deposit = (0, 0, 0, 0)
-        MAP[coordy].append(Location((coordx, coordy), tile[1], features, deposit))
-  def in_map(tile: Tuple[int, int]) -> bool:
-    if tile[0] >= 0 and tile[0] <= MAP_LENGTH and tile[1] >= 0 and tile[1] <= MAP_LENGTH and dynamics.MAP[tile[1]][tile[0]].terrain != "":
-      return True
-    return False
-  def in_terrain(tile: Tuple[int, int], available: List[str]) -> bool:
-    if MAP[tile[1]][tile[0]].terrain in available:
-      return True
-    return False

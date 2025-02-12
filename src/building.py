@@ -1,6 +1,6 @@
 import dynamics
 from entity import *
-from location import Location
+from map import *
 from animations import resourceAnimation
 class Building(Entity):
   #building constructor
@@ -17,7 +17,7 @@ class Building(Entity):
   aqueduct_img = pygame.image.load("../building/aqueduct.png").convert_alpha()
   pipelines_img = pygame.image.load("../building/pipelines.png").convert_alpha()
   img_dict = {"Lumber Hut":lumber_hut_img, "Mine":mine_img, "Shipyard":shipyard_img, "Farm":farm_img, "Plantation":plantation_img, "Foundry":foundry_img, "Aqueduct":aqueduct_img, "Pipelines":pipelines_img}
-  def __init__(self, stats: List[Any], coords: Tuple[int, int], player_number: int):
+  def __init__(self, location: Location, stats: List[Any], coords: Tuple[int, int], player_number: int):
     self.name = stats[0]
     super().__init__(player_number, coords, pygame.image.load("../building/"+str(self.name).lower()+".png").convert_alpha())
     #get stats from list
@@ -34,6 +34,7 @@ class Building(Entity):
     self.abilities = stats[5]
     #upgrade should be a list of the building stats
     self.upgraded_building = stats[6]
+    location.building = self
   def produce(self) -> None:
     #this is where the building produces resources
     #run this in the end_turn button clicked
@@ -59,13 +60,13 @@ class Building(Entity):
     text(text_display_size, str(self.production_timer + 1) + "/" + str(self.production_time) + " turns", (255, 0, 0), x + 12.5, y + 75)
     if self.production_timer + 1 == self.production_time:
       text(text_display_size, str(self.production_timer + 1) + "/" + str(self.production_time) + " turns", (0, 184, 0), x + 12.5, y + 75)
-  def upgrade(self) -> None:
+  def upgrade(self, location: Location) -> None:
     #buildings can only be upgraded into one building
-    dynamics.player_list[self.player_number].buildings.append(Building(self.upgraded_building, self.coords, self.player_number))
+    dynamics.player_list[self.player_number].buildings.append(Building(location, self.upgraded_building, self.coords, self.player_number))
     dynamics.selected_object = dynamics.player_list[self.player_number].buildings[-1]
     dynamics.player_list[self.player_number].buildings.remove(self)
   def draw(self, color):
-    Location.shadeTile(self.coords, color)
+    Map.shadeTile(self.coords, color)
     screen.blit(self.image, (self.display_coords[0] + dynamics.offset_x, self.display_coords[1] + dynamics.offset_y))
     pygame.draw.rect(screen, (122, 122, 122), (self.display_coords[0] + dynamics.offset_x, self.display_coords[1] + dynamics.offset_y + Building.building_size*0.85, Building.building_size, 10))
     pygame.draw.rect(screen, (255, 0, 255), (self.display_coords[0] + dynamics.offset_x, self.display_coords[1] + dynamics.offset_y + Building.building_size*0.85, Building.building_size*((self.production_timer + 1)/self.production_time), 10))

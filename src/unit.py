@@ -1,6 +1,7 @@
 import dynamics
 from entity import *
 from location import Location
+from map import *
 from animations import damageAnimation
 class Unit(Entity):
   #unit constructor
@@ -25,7 +26,7 @@ class Unit(Entity):
   steeler_img = pygame.image.load("../unit/steeler.png").convert_alpha()
   unit_max_stack = 3
   img_dict = {"Man":man_img, "Rider":rider_img, "Knight":knight_img, "Elephant":elephant_img, "Swordsman":swordsman_img, "Spearman":spearman_img, "Axeman":axeman_img, "Shieldman":shieldman_img, "Archer":archer_img, "Crossbowman":crossbowman_img, "Field Medic":field_medic_img, "Ship":ship_img, "Steeler":steeler_img}
-  def __init__(self, stats: List[Any], coords: Tuple[int, int], player_number, current_health: int = 0):
+  def __init__(self, location: Location, stats: List[Any], coords: Tuple[int, int], player_number, current_health: int = 0):
     self.name = stats[0]
     super().__init__(player_number, coords, pygame.image.load("../unit/"+str(self.name).lower()+".png").convert_alpha())
     #get stats from list
@@ -52,17 +53,18 @@ class Unit(Entity):
     #action_index starts at 0
     self.action_range = [self.coords]
     #moverange is a list of all the adjacent hexes that the unit can be moved to
+    location.unit = self
   def unit_reset(self) -> None: #always reset self.action_range to [self.coords]
     self.action = None
     self.action_index = -1
     self.action_sequence = []
     self.action_range = [self.coords]
     self.turn_done = True
-  def next_action(self) -> None:
+  def next_action(self, map: Map) -> None:
     try:
       self.action_index += 1
       self.action = self.action_sequence[self.action_index] #if there is an error here, jump to the except
-      self.calculate_action_range()
+      self.calculate_action_range(map)
     except IndexError:
       self.unit_reset()
   def calculate_damage(self, defender: 'Unit') -> int:
@@ -75,7 +77,7 @@ class Unit(Entity):
     if damage < 0:
       damage = 0
     return round(damage)
-  def do_action(self, object: Any) -> None:
+  def do_action(self, object: Any, map: Map) -> None:
     #calculate the ranges in calculate_action_range, and actually do the action here
     if self.action == "move" and type(object) == Location:
       #action is a movement order
@@ -83,16 +85,18 @@ class Unit(Entity):
 
       if object.coords in self.action_range:
         #location is within movement range and is not occupied
-        print("successful move")
+        map.return_tile(self.coords).unit = None
         self.coords = deepcopy(object.coords)
         self.display_coords = coordConvert(self.coords, allocateSize = self.img_size)
-        MAP[self.coords[1]][self.coords[0]].give_deposit()
-        if(return_occupied(self.coords, "building")):
-          return_occupied(self.coords, "building").getConquered(self.player_number)
-        elif(return_occupied(self.coords, "city")):
-          return_occupied(self.coords, "city").getConquered(self.player_number)
+        map.return_tile(self.coords).unit = self
+        
+        object.give_deposit()
+        if(object.building != None):
+          object.building.getConquered(self.player_number)
+        elif(object.city != None):
+          object.city.getConquered(self.player_number)
         #the move is valid, so we move on to the next action
-        self.next_action()
+        self.next_action(map)
 
     elif self.action == "attack" and type(object) == Unit and not object.owned_by_current_player():
       # if the action is an attack and the targeted unit exists and the targeted unit does not belong to the current player (no friendly fire)
@@ -109,8 +113,9 @@ class Unit(Entity):
         #make the targeted_unit lose health
         object.health -= self.calculate_damage(object)
         if object.health <= 0:
-          dynamics.player_list[object.player_number].units.remove(object) #kill unit
-        self.next_action()
+          map.return_tile(object.coords).unit = None
+          dynamics.player_list[object.player_number].units.remove(object) #kill unit by removing all pointers
+        self.next_action(map)
     elif self.action == "heal" and object == self:
       #action is a heal order
 
@@ -119,16 +124,16 @@ class Unit(Entity):
       if self.health > self.max_health:
         self.health = self.max_health
       print("successful heal")
-      self.next_action()
+      self.next_action(map)
     elif self.action == "heal other" and type(object) == Unit and object.owned_by_current_player():
       object.health += object.regen_value
       if object.health > object.max_health:
         object.health = object.max_health
       print("successful heal other")
-      self.next_action()
+      self.next_action(map)
 
     #move on to next action
-  def calculate_action_range(self) -> None:
+  def calculate_action_range(self, map: Map) -> None:
     #display the hints for the unit
     #this also calculates the action ranges for the units, not during do_action
     self.action_range = [self.coords]
@@ -142,10 +147,10 @@ class Unit(Entity):
         #this next for loop extends self.movement_range by 1 hex in every direction
         #movement_tile is already in the range (we dont have to check terrain and map restrictions), extended_tile is not
         for movement_tile in deepcopy(self.action_range): #try to extend each tile
-          for extended_tile in Location.return_Adjacent_hex(movement_tile): #extend movement_tile
-            if extended_tile not in self.action_range and not return_occupied(extended_tile, object = "unit"):
+          for extended_tile in map.return_Adjacent_hex(movement_tile): #extend movement_tile
+            if extended_tile not in self.action_range and map.return_tile(extended_tile).unit == None:
               #remove duplicates and places occupied by other ppl
-              if Location.in_map(extended_tile) and Location.in_terrain(extended_tile, dynamics.player_list[self.player_number].available_terrain):
+              if map.in_map(extended_tile) and map.in_terrain(extended_tile, dynamics.player_list[self.player_number].available_terrain):
                 self.action_range.append(extended_tile)
       if "float" in self.abilities:
         #reset terrain for float units
@@ -156,11 +161,12 @@ class Unit(Entity):
     elif self.action == "attack":
       for counter in range(self.range):
         for movement_tile in deepcopy(self.action_range):
-          self.action_range.extend(Location.return_Adjacent_hex(movement_tile))
+          self.action_range.extend(map.return_Adjacent_hex(movement_tile))
       counter = 0
       while counter < len(self.action_range):
-        if not return_occupied(self.action_range[counter], object = "unit") or return_occupied(self.action_range[counter], object = "unit") in dynamics.player_list[self.player_number].units:
-          #if there is no dude there or you own the dude
+        unit = map.return_tile(self.action_range[counter]).unit
+        if unit == None or unit.player_number == self.player_number:
+          #if there is no dude there or he's on the same team as self
           self.action_range.pop(counter)
           continue
         counter += 1
@@ -169,11 +175,12 @@ class Unit(Entity):
     elif self.action == "heal other":
       for counter in range(self.range):
         for movement_tile in (self.action_range):
-          self.action_range.extend(Location.return_Adjacent_hex(movement_tile))
+          self.action_range.extend(map.return_Adjacent_hex(movement_tile))
       counter = 0
       while counter < len(self.action_range):
-        if not return_occupied(self.action_range[counter], object = "unit") or return_occupied(self.action_range[counter], object = "unit") not in dynamics.player_list[self.player_number].units:
-          #if there is no dude there or you DON'T own the dude
+        unit = map.return_tile(self.action_range[counter]).unit
+        if unit == None or unit.player_number != self.player_number:
+          #if there is no dude there or he's not on the same team as this guy
           self.action_range.pop(counter)
           continue
         counter += 1
@@ -197,7 +204,7 @@ class Unit(Entity):
     screen.blit(Unit.movement_stat_img, (x + 87.5, y + 37.5))
     text(text_display_size, str(self.movement), (0, 0, 0), x + 125, y + 50, alignx = "center", aligny = "center")
   def draw(self, color, availability_marker_size):
-    Location.shadeTile(self.coords, color)
+    Map.shadeTile(self.coords, color)
     screen.blit(self.image, (self.display_coords[0] + dynamics.offset_x, self.display_coords[1] + dynamics.offset_y))
     #this will display a text version of the unit health: text(25, str(self.health) + "/" + str(self.max_health), (255, 0, 0), self.display_coords[0] + unit_size + dynamics.offset_x, self.display_coords[1] + dynamics.offset_y)
     #health bar:

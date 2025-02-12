@@ -1,6 +1,6 @@
 import dynamics
 from entity import *
-from location import Location
+from map import *
 from animations import resourceAnimation
 class City(Entity):
   #building constructor
@@ -10,7 +10,7 @@ class City(Entity):
   max_level = 5
   cooldown_img = pygame.image.load("../stats/timer.png").convert_alpha()
   upgrade_img = pygame.image.load("../city/upgrade.png").convert_alpha()
-  def __init__(self, coords: Tuple[int, int], player_number: int, level: int = 1):
+  def __init__(self, location: Location, coords: Tuple[int, int], player_number: int, level: int = 1):
     self.level = level
     super().__init__(player_number, coords, pygame.image.load("../city/"+str(self.level)+".png").convert_alpha())
     self.income = self.level * 5
@@ -18,6 +18,7 @@ class City(Entity):
     #prevent unit spamming
     self.spawn_timer = 0
     self.max_spawn_timer = self.level * 10
+    location.city = self
   def produce(self) -> None:
     #this is where the city produces money
     #run this in the end_turn button clicked
@@ -47,7 +48,7 @@ class City(Entity):
   def draw(self, color = None):
     if color != None:
       #city is owned (not a village)
-      Location.shadeTile(self.coords, color)
+      Map.shadeTile(self.coords, color)
       pygame.draw.rect(screen, (0, 255, 0), (self.display_coords[0] + dynamics.offset_x, self.display_coords[1] + dynamics.offset_y + City.city_size*0.85, City.city_size, 10))
       pygame.draw.rect(screen, (0, 0, 255), (self.display_coords[0] + dynamics.offset_x, self.display_coords[1] + dynamics.offset_y + City.city_size*0.85, City.city_size*(self.spawn_timer/self.max_spawn_timer), 10))
       if self.spawn_timer >= self.max_spawn_timer:

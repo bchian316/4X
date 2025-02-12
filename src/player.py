@@ -44,7 +44,7 @@ class Player:
     self.available_units = [man]
     self.available_naval_units = [ship]
     #available terrain the player's units can be on
-    self.available_terrain = ["plains", "forest"]
+    self.available_terrain = ["plains", "forest", "fertile land"]
   def display_units(self, availability_marker_size: int = 10) -> None:
     #this displays a list of specific units (a unit type)
     #units would be a list containing a specific unit type
@@ -69,12 +69,12 @@ class Player:
     self.display_units()
     #update everything:
     #add the money per turn, resources per turn
-  def player_action_eligible(self, action, location) -> bool:
+  def player_action_eligible(self, action: str, location: Location) -> bool:
     if action == "chop":
       if location.terrain == "forest" or location.terrain == "dense forest":
         return True
     elif action == "cultivate":
-      if "crop" in location.features:
+      if location.terrain == "fertile land":
         return True
     elif action == "refine":
       if "mineral" in location.features:
@@ -86,10 +86,10 @@ class Player:
       if location.terrain == "plains" or location.terrain == "forest":
         return True
     elif action == "fertilize":
-      if location.terrain != "ocean" and "crop" not in location.features and "harvested crop" not in location.features:
+      if location.terrain == "plains":
         return True
     elif action == "reap":
-      if "crop" in location.features or "harvested crop" in location.features:
+      if location.terrain == "fertile land":
         return True
     elif action == "collect":
       if location.terrain == "water":
@@ -102,14 +102,10 @@ class Player:
       self.wood += 5
       if location.terrain == "forest":
         location.terrain = "plains"
-        location.img = Location.img_dict["plains"]
       elif location.terrain == "dense forest":
         location.terrain = "forest"
-        location.img = Location.img_dict["forest"]
     elif action == "cultivate":
       self.food += 3
-      location.features.remove("crop")
-      location.features.append("harvested crop")
     elif action == "refine":
       self.metal += 20
       location.features.remove("mineral")
@@ -120,30 +116,22 @@ class Player:
       #grow forest from plains
       if location.terrain == "plains":
         location.terrain = "forest"
-        location.img = Location.img_dict["forest"]
       if location.terrain == "forest":
         location.terrain = "dense forest"
-        location.img = Location.img_dict["dense forest"]
     elif action == "fertilize":
-      location.features.append("crop")
+      location.terrain = "fertile land"
     elif action == "reap":
-      if "crop" in location.features:
-        location.features.remove("crop")
-      elif "harvested crop" in location.features:
-        location.features.remove("harvested crop")
+      location.terrain = "plains"
       self.food += 12
     if action == "collect":
       self.water += 5
       location.terrain = "plains"
+    location.image = Location.img_dict[location.terrain]
+    location.player_acted_on = True
     self.money -= cost
   def turn_update_before(self) -> None:
     #this takes place at the beginning of turn, where buildings and cities produce resources
     #reset crop resource
-    for row in MAP:
-      for tile in row:
-        if "harvested crop" in tile.features:
-          tile.features.remove("harvested crop")
-          tile.features.append("crop")
     for building in self.buildings:
       building.produce()
     for city in self.cities:
@@ -157,11 +145,9 @@ class Player:
       unit.unit_reset()
       unit.turn_done = False #gain energy
     for city in self.cities:
-      if return_occupied(city.coords, "unit") == False:
-        #cities cannot cooldown if there's a person on it
-        city.spawn_timer -= city.max_spawn_timer
-        if city.spawn_timer < 0:
-          city.spawn_timer = 0
+      city.spawn_timer -= city.max_spawn_timer
+      if city.spawn_timer < 0:
+        city.spawn_timer = 0
   def deduct_costs(self, amounts: List[int]) -> None:
     #amounts is a list containing [wood, metal, food, water]
     #if deduct is True, subtract the resources, otherwise, add them
@@ -169,3 +155,7 @@ class Player:
     self.metal -= amounts[1]
     self.food -= amounts[2]
     self.water -= amounts[3]
+  def owns_unit_there(self, location: Location) -> bool:
+    if(location.unit != None and location.unit.player_number == self.player_number):
+      return True
+    return False
