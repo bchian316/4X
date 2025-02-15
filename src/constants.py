@@ -43,30 +43,32 @@ wood_resource_img = pygame.image.load("../resource/wood.png").convert_alpha()
 metal_resource_img = pygame.image.load("../resource/metal.png").convert_alpha()
 food_resource_img = pygame.image.load("../resource/food.png").convert_alpha()
 water_resource_img = pygame.image.load("../resource/water.png").convert_alpha()
+resource_colors = {"wood": wood_color, "metal": metal_color, "food": food_color, "water": water_color}
+resource_imgs = {"wood": wood_resource_img, "metal": metal_resource_img, "food": food_resource_img, "water": water_resource_img}
 #lets make the map a constant size (4 side length: hexagon) = 37 tiles
 #lets make 9 diagonal columns because there are 2x-1 columns when x is side length
 #the map will be the constant variable that revolves around all the players
 #it will show the terrain of every tile in the game
 #MAP = [4 items, 5 items, 6, 7, 6, 5, 4] because there is a side length of 4
-TERRAIN = [["mountain", "mountain", "mountain", "plains", "water", "water", "ocean", "", "", "", ""], 
-       ["mountain", "mountain", "fertile land", "forest", "fertile land", "water", "ocean", "ocean", "", "", "", "", ""], 
-       ["forest", "mountain", "dense forest", "fertile land", "water", "ocean", "ocean", "ocean", "water", "", "", "", ""], 
-       ["plains", "mountain", "dense forest", "water", "water", "forest", "plains", "mountain", "ocean", "ocean", "", "", ""], 
-       ["water", "forest", "plains", "dense forest", "water", "mountain", "plains", "water", "mountain", "forest", "forest", "", ""], 
-       ["dense forest", "water", "plains", "mountain", "plains", "plains", "mountain", "water", "plains", "forest", "plains", "plains", ""],
-       ["dense forest", "forest", "mountain", "mountain", "mountain", "mountain", "water", "plains", "mountain", "plains", "forest", "plains", "plains"],
-       ["", "forest", "mountain", "water", "water", "mountain", "plains", "ocean", "plains", "water", "dense forest", "dense forest", "dense forest"], 
-       ["", "", "mountain", "ocean", "mountain", "ocean", "mountain", "forest", "mountain", "mountain", "dense forest", "dense forest", "dense forest"],
-       ["", "", "", "mountain", "water", "ocean", "plains", "plains", "water", "plains", "dense forest", "dense forest", "dense forest"], 
-       ["", "", "", "", "mountain", "mountain", "mountain", "mountain", "plains", "plains", "dense forest", "dense forest", "plains"],
-       ["", "", "", "", "", "mountain", "mountain", "water", "ocean", "plains", "plains", "dense forest", "dense forest"],
-       ["", "", "", "", "", "", "ocean", "ocean", "ocean", "ocean", "ocean", "ocean", "ocean"]]
+TERRAIN = (("mountain", "mountain", "mountain", "plains", "water", "water", "ocean", "", "", "", ""), 
+       ("mountain", "mountain", "fertile land", "forest", "fertile land", "water", "ocean", "ocean", "", "", "", "", ""), 
+       ("forest", "mountain", "dense forest", "fertile land", "water", "ocean", "ocean", "ocean", "water", "", "", "", ""), 
+       ("plains", "mountain", "dense forest", "water", "water", "forest", "plains", "mountain", "ocean", "ocean", "", "", ""), 
+       ("water", "forest", "plains", "dense forest", "water", "mountain", "plains", "water", "mountain", "forest", "forest", "", ""), 
+       ("dense forest", "water", "plains", "mountain", "plains", "plains", "mountain", "water", "plains", "forest", "plains", "plains", ""),
+       ("dense forest", "forest", "mountain", "mountain", "mountain", "mountain", "water", "plains", "mountain", "plains", "forest", "plains", "plains"),
+       ("", "forest", "mountain", "water", "water", "mountain", "plains", "ocean", "plains", "water", "dense forest", "dense forest", "dense forest"), 
+       ("", "", "mountain", "ocean", "mountain", "ocean", "mountain", "forest", "mountain", "mountain", "dense forest", "dense forest", "dense forest"),
+       ("", "", "", "mountain", "water", "ocean", "plains", "plains", "water", "plains", "dense forest", "dense forest", "dense forest"), 
+       ("", "", "", "", "mountain", "mountain", "mountain", "mountain", "plains", "plains", "dense forest", "dense forest", "plains"),
+       ("", "", "", "", "", "mountain", "mountain", "water", "ocean", "plains", "plains", "dense forest", "dense forest"),
+       ("", "", "", "", "", "", "ocean", "ocean", "ocean", "ocean", "ocean", "ocean", "ocean"))
 #this is the side length of the map
 MAP_LENGTH = len(TERRAIN)-1
 #useless for now
-MINERAL = [(9, 12), (10, 12), (7, 1), (8, 2), (4, 3), (4, 4), (7, 4), (1, 5), (3, 7), (7, 7), (5, 8), (8, 4)]
-ORE = [(7, 2), (0, 3), (5, 4), (5, 5), (6, 6), (11, 6), (7, 9), (9, 9), (10, 9), (7, 11), (9, 11), (12, 12)]
-VILLAGES = [(8, 4), (2, 5), (8, 7), (3, 0), (4, 8), (12, 10), (2, 2)]
+MINERAL = ((9, 12), (10, 12), (7, 1), (8, 2), (4, 3), (4, 4), (7, 4), (1, 5), (3, 7), (7, 7), (5, 8), (8, 4))
+ORE = ((7, 2), (0, 3), (5, 4), (5, 5), (6, 6), (11, 6), (7, 9), (9, 9), (10, 9), (7, 11), (9, 11), (12, 12))
+VILLAGES = ((8, 4), (2, 5), (8, 7), (3, 0), (4, 8), (12, 10), (2, 2))
 
 #important variables for formatting and stuff
 selected_object = None
@@ -82,6 +84,19 @@ player_action_size = 75
 option_x = 425
 selection_frame = pygame.image.load("../frames/selection frame.png").convert_alpha()
 production_frame = pygame.image.load("../frames/production frame.png").convert_alpha()
+
+unit_available_button_frame = pygame.image.load("../frames/unit/available.png").convert_alpha()
+unit_hover_button_frame = pygame.image.load("../frames/unit/hover.png").convert_alpha()
+unit_unavailable_button_frame = pygame.image.load("../frames/unit/unavailable.png").convert_alpha()
+unit_button_frames = {"available": unit_available_button_frame, "hover": unit_hover_button_frame, "unavailable": unit_unavailable_button_frame}
+building_available_button_frame = pygame.image.load("../frames/building/available.png").convert_alpha()
+building_hover_button_frame = pygame.image.load("../frames/building/hover.png").convert_alpha()
+building_unavailable_button_frame = pygame.image.load("../frames/building/unavailable.png").convert_alpha()
+building_button_frames = {"available": building_available_button_frame, "hover": building_hover_button_frame, "unavailable": building_unavailable_button_frame}
+city_available_button_frame = pygame.image.load("../frames/city/available.png").convert_alpha()
+city_hover_button_frame = pygame.image.load("../frames/city/hover.png").convert_alpha()
+city_unavailable_button_frame = pygame.image.load("../frames/city/unavailable.png").convert_alpha()
+city_button_frames = {"available": city_available_button_frame, "hover": city_hover_button_frame, "unavailable": city_unavailable_button_frame}
 #selected images
 unit_select_img = pygame.image.load("../selection/owns select.png").convert_alpha()
 building_select_img = pygame.transform.scale(unit_select_img, (75, 75)).convert_alpha()

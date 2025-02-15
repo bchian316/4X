@@ -122,8 +122,6 @@ for v in VILLAGES:
   dynamics.villages.append(City(MAP.return_tile(v), v, -1, 0))
 
 #delete later
-from stats import man
-dynamics.player_list[0].units.append(Unit(MAP.return_tile((11, 11)), man, (11, 11), 0))
 
 while True:
   while dynamics.status == "home":
@@ -267,7 +265,7 @@ while True:
 
     #display player_number
     text(25, str("Player " + str(dynamics.current_player + 1)) + " turn", current_player.color, SCREENLENGTH, 0, alignx = "right")
-    display_resources([current_player.money, current_player.wood, current_player.metal, current_player.food, current_player.water], SCREENLENGTH - 25, 50, display_all = True, size = 40)
+    display_resources(current_player.resources, SCREENLENGTH - 25, 50, money = current_player.money, display_all = True, size = 40)
 
     #can only choose unit sequence or do actions if unit turn is not over
     if isinstance(dynamics.selected_object, Unit) and dynamics.selected_object.owned_by_current_player() and not dynamics.selected_object.turn_done:
@@ -290,6 +288,10 @@ while True:
           hint_x, hint_y = coordConvert(hint)
           pygame.draw.circle(screen, (255, 255, 0), (hint_x + dynamics.offset_x, hint_y + dynamics.offset_y), 10)
         display_action_sequence(dynamics.selected_object.action_sequence, dynamics.selected_object.action_index, 0, 300)
+        if button(25, 175, 125, 125, 10):
+          dynamics.selected_object.next_action(MAP)
+        screen.blit(skip_action_img, (50, 212.5))
+        text(25, "Skip Action", (0, 0, 0), 87.5, 200, alignx = "center", aligny = "center")
         if dynamics.selected_object.action == "move":
           dynamics.selected_object.do_action(receive_input(Location), MAP)
         elif dynamics.selected_object.action == "attack":
@@ -298,23 +300,19 @@ while True:
           dynamics.selected_object.do_action(receive_input(Unit), MAP)
         elif dynamics.selected_object.action == "heal other":
           dynamics.selected_object.do_action(receive_input(Unit), MAP)
-        if button(25, 175, 125, 125, 10):
-          dynamics.selected_object.next_action(MAP)
-        screen.blit(skip_action_img, (50, 212.5))
-        text(25, "Skip Action", (0, 0, 0), 87.5, 200, alignx = "center", aligny = "center")
     #unit upgrade building
     elif isinstance(dynamics.selected_object, Building) and dynamics.selected_object.owned_by_current_player():
       if current_player.owns_unit_there(MAP.return_tile(dynamics.selected_object.coords)):
         #upgrade a building if there's a dude on it
         if dynamics.selected_object.upgraded_building in current_player.available_upgraded_buildings:
           #if there is no upgraded building, it would be: if None in available buildings, so that would be false
-          if button(25, 200, Building.building_size*2, Building.building_size*2, 10, available = bool(current_player.wood >= dynamics.selected_object.upgraded_building[1][0] and current_player.metal >= dynamics.selected_object.upgraded_building[1][1] and current_player.food >= dynamics.selected_object.upgraded_building[1][2])):
+          if button(25, 200, Building.building_size*2, Building.building_size*2, 10, available = current_player.can_afford(dynamics.selected_object.upgraded_building["cost"]), frames = building_button_frames):
             dynamics.selected_object.upgrade(MAP.return_tile(dynamics.selected_object.coords))
             current_player.deduct_costs(dynamics.selected_object.cost)
           if dynamics.selected_object.upgraded_building != None:
-            screen.blit(Building.img_dict[dynamics.selected_object.upgraded_building[0]], (37.5, 262.5))
-            text(20, dynamics.selected_object.upgraded_building[0], (0, 0, 0), 75, 250, alignx = "center", aligny = "center")
-            display_resources([0] + dynamics.selected_object.upgraded_building[1], 150, 237.5)
+            screen.blit(Building.img_dict[dynamics.selected_object.upgraded_building["name"]], (37.5, 262.5))
+            text(20, dynamics.selected_object.upgraded_building["name"], (0, 0, 0), 75, 250, alignx = "center", aligny = "center")
+            display_resources(dynamics.selected_object.upgraded_building["cost"], 150, 237.5)
           text(25, "Upgrade", (0, 0, 0), 100, 225, alignx = "center", aligny = "center")
       #spawn new unit
     elif isinstance(dynamics.selected_object, City) and dynamics.selected_object.owned_by_current_player():
@@ -322,27 +320,27 @@ while True:
       #if a city is selected and there's no dude on it to avoid spawning more than 1 dude
         for unit_type in enumerate(current_player.available_units):
           if dynamics.selected_object.spawn_timer < dynamics.selected_object.max_spawn_timer:
-            if button((Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2), Unit.unit_size * 2, Unit.unit_size * 2, 10, available = bool(current_player.wood >= unit_type[1][7][0] and current_player.metal >= unit_type[1][7][1] and current_player.food >= unit_type[1][7][2])):
-              print(unit_type[1][0] + " unit is spawned")
-              current_player.deduct_costs(unit_type[1][7])
+            if button((Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2), Unit.unit_size * 2, Unit.unit_size * 2, 10, available = current_player.can_afford(unit_type[1]["cost"]), frames = unit_button_frames):
+              print(unit_type[1]["name"] + " unit is spawned")
+              current_player.deduct_costs(unit_type[1]["cost"])
               #add spawn_cooldown to city
-              dynamics.selected_object.spawn_timer += unit_type[1][8]
+              dynamics.selected_object.spawn_timer += unit_type[1]["time"]
               new_unit = Unit(MAP.return_tile(dynamics.selected_object.coords), unit_type[1], dynamics.selected_object.coords, dynamics.current_player)
               current_player.units.append(new_unit)
               new_unit.unit_reset()
               del(new_unit)
           else:
             pygame.draw.rect(screen, (255, 0, 0), ((Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2), Unit.unit_size * 2, Unit.unit_size * 2), width = 0, border_radius = 10)
-          screen.blit(Unit.img_dict[unit_type[1][0]], ((Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2) + 25))
-          text(20, unit_type[1][0], (0, 0, 0), (Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2))
-          display_resources([0] + unit_type[1][7], (Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack) + 75, option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2) + 12.5)
+          screen.blit(Unit.img_dict[unit_type[1]["name"]], ((Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack), option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2) + 25))
+          text(20, unit_type[1]["name"], (0, 0, 0), (Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack) + 50, option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2), alignx = "center")
+          display_resources(unit_type[1]["cost"], (Unit.unit_size*2)*(unit_type[0]//Unit.unit_max_stack) + 62.5, option_x + (unit_type[0]%Unit.unit_max_stack) * (Unit.unit_size*2) + 12.5)
       #upgrade button
       if dynamics.selected_object.level < City.max_level:
-        if button(25, 200, City.city_size*2, City.city_size*2, 10, available = bool(current_player.money >= dynamics.selected_object.cost[0] and current_player.wood >= dynamics.selected_object.cost[1] and current_player.metal >= dynamics.selected_object.cost[2] and current_player.food >= dynamics.selected_object.cost[2]), acolor = (224, 224, 34), hcolor = (140, 140, 3)):
+        if button(25, 200, City.city_size*2, City.city_size*2, 10, available = current_player.can_afford(dynamics.selected_object.cost), frames = city_button_frames):
           dynamics.selected_object.upgrade()
         screen.blit(dynamics.selected_object.image, (37.5, 250))
         screen.blit(City.upgrade_img, (37.5, 250))
-        display_resources([0] + dynamics.selected_object.cost, 150, 250)
+        display_resources(dynamics.selected_object.cost, 137.5, 237.5)
         text(25, "Upgrade", (0, 0, 0), 100, 225, alignx = "center", aligny = "center")
       else:
         text(25, "Max Level", (0, 0, 0), 75, 175, alignx = "center", aligny = "center")
@@ -354,20 +352,20 @@ while True:
       #build new building
       for building_type in enumerate(current_player.available_buildings):
         #a_building_type is a list containing the stats of a building
-        if dynamics.selected_object.building == None and dynamics.selected_object.city == None and current_player.owns_unit_there(dynamics.selected_object) and dynamics.selected_object.terrain in building_type[1][4]:
+        if dynamics.selected_object.building == None and dynamics.selected_object.city == None and current_player.owns_unit_there(dynamics.selected_object) and dynamics.selected_object.terrain == building_type[1]["terrain"]:
           #if there is no other building there and u own a dude that is there and the terrain is in the building's terrain list and there is no city there
-          if button(SCREENLENGTH - Building.building_size*2, 200 + building_type[0] * (Building.building_size*2), Building.building_size*2, Building.building_size*2, 10, stroke = 0, available = bool(current_player.wood >= building_type[1][1][0] and current_player.metal >= building_type[1][1][1] and current_player.food >= building_type[1][1][2] and current_player.water >= building_type[1][1][3])):
+          if button(SCREENLENGTH - Building.building_size*2, 200 + building_type[0] * (Building.building_size*2), Building.building_size*2, Building.building_size*2, 10, stroke = 0, available = current_player.can_afford(building_type[1]["cost"]), frames = building_button_frames):
             #build building and subtract resources
-            print(building_type[1][0] + " is built")
-            current_player.deduct_costs(building_type[1][1])
+            print(building_type[1]["name"] + " is built")
+            current_player.deduct_costs(building_type[1]["cost"])
             new_building = Building(dynamics.selected_object, building_type[1], dynamics.selected_object.coords, dynamics.current_player)
             current_player.buildings.append(new_building)
             del(new_building)
           #display the building images on the buttons
-          screen.blit(Building.img_dict[building_type[1][0]], (SCREENLENGTH - Building.building_size*2 + 25, 250 + building_type[0] * (Building.building_size*2)))
-          text(20, building_type[1][0], (0, 0, 0), SCREENLENGTH - 150, 200 + building_type[0] * (Building.building_size*2))
-          text(20, "Terrain: " + ", ".join(building_type[1][4]), (0, 0, 0), SCREENLENGTH - 150, 210 + building_type[0] * (Building.building_size*2))
-          display_resources([0] + building_type[1][1], SCREENLENGTH - 25, 250 + building_type[0] * (Building.building_size*2))
+          screen.blit(Building.img_dict[building_type[1]["name"]], (SCREENLENGTH - Building.building_size*2 + 25, 250 + building_type[0] * (Building.building_size*2)))
+          text(20, building_type[1]["name"], (0, 0, 0), SCREENLENGTH - 150, 200 + building_type[0] * (Building.building_size*2))
+          text(20, "Terrain: " + building_type[1]["terrain"], (0, 0, 0), SCREENLENGTH - 150, 210 + building_type[0] * (Building.building_size*2))
+          display_resources(building_type[1]["cost"], SCREENLENGTH - 25, 250 + building_type[0] * (Building.building_size*2))
 
       #do player action    
       for player_action in enumerate(current_player.available_actions):
@@ -387,26 +385,28 @@ while True:
     #base this off of selection order
     #this allows eg if selected unit, next is building
     #if player's click did not land on any unit, we move on to building
-    for object_type in selection_order:
-      obj = receive_input(object_type)
-      if obj == None:
-        continue
-      if dynamics.selected_object == None or dynamics.selected_object.coords != obj.coords:
-        #if there was no past selected or player selected a different space
-        dynamics.selected_object = obj
-        dynamics.btn_pressed_this_frame = True
-        break
-      if dynamics.selected_object and dynamics.selected_object.coords == obj.coords:
-        #if player selected the same space
-        dynamics.selected_object = alternate_selection(dynamics.selected_object)
-        dynamics.btn_pressed_this_frame = True
-        break
-    del(obj)
+    if not dynamics.btn_pressed_this_frame:
+      for object_type in selection_order:
+        obj = receive_input(object_type)
+        if obj == None:
+          continue
+        if dynamics.selected_object == None or dynamics.selected_object.coords != obj.coords:
+          #if there was no past selected or player selected a different space
+          dynamics.selected_object = obj
+          dynamics.btn_pressed_this_frame = True
+          break
+        if dynamics.selected_object and dynamics.selected_object.coords == obj.coords:
+          #if player selected the same space
+          dynamics.selected_object = alternate_selection(dynamics.selected_object)
+          dynamics.btn_pressed_this_frame = True
+          break
+      del(obj)
       
     Animation.destroyAnimation(dynamics.current_player)
     for animation in dynamics.animation_list:
       animation.update()
     clock.tick(FPS)
+    text(20, str(clock.get_fps()), (0, 0, 0), 0, 0)
     screen.blit(transparent_screen, (0, 0))
     pygame.display.update()
 
@@ -443,33 +443,33 @@ while True:
         dynamics.selected_object.calculate_action_range(MAP)
     
     text(25, str("Player " + str(dynamics.current_player + 1)) + " turn", current_player.color, SCREENLENGTH, 0, alignx = "right")
-    display_resources([current_player.money, current_player.wood, current_player.metal, current_player.food, current_player.food, current_player.water], SCREENLENGTH - 25, 50, display_all = True)
+    display_resources(current_player.resources, SCREENLENGTH - 25, 50, money = current_player.money, display_all = True)
     
     for a_tech in all_techs:
       #a_tech is a list of the tech stats, not a class object, therefore, a_tech[0] is the name, a_tech[1] is the cost, a_tech[4] is the preceding tech
-      if a_tech[3] == None or a_tech[3][0] in current_player.techs:
+      if a_tech["preceding tech"] == None or current_player.owns_tech(a_tech["preceding tech"]):
         #if there is no tech that precedes a_tech, or if the player owns the preceding tech, tech is available to buy
-        if a_tech[0] not in current_player.techs:
+        if not current_player.owns_tech(a_tech):
           #if the player does not own the tech
-          if button(a_tech[2][0] + dynamics.tech_offset_x, a_tech[2][1] + dynamics.tech_offset_y, Tech.tech_size, Tech.tech_size, 10, available = current_player.money >= a_tech[1]):
+          if button(a_tech["coords"][0] + dynamics.tech_offset_x, a_tech["coords"][1] + dynamics.tech_offset_y, Tech.tech_size, Tech.tech_size, 10, available = current_player.money >= a_tech["cost"]):
           #owns_tech will compare names of the tech, archery[3][0] == "Logging"
-            current_player.money -= a_tech[1]
-            Tech(a_tech, dynamics.current_player)
+            current_player.money -= a_tech["cost"]
+            current_player.techs.append(Tech(a_tech, dynamics.current_player))
             print("tech bought")
         else:
           #player owns the tech already
-          pygame.draw.rect(screen, (0, 255, 255), (a_tech[2][0] + dynamics.tech_offset_x, a_tech[2][1] + dynamics.tech_offset_y, Tech.tech_size, Tech.tech_size), 0, 10)
+          pygame.draw.rect(screen, (0, 255, 255), (a_tech["coords"][0] + dynamics.tech_offset_x, a_tech["coords"][1] + dynamics.tech_offset_y, Tech.tech_size, Tech.tech_size), 0, 10)
       else:
         #display another color
         #player does not own the preceding tech
         #pygame.draw.rect(screen, (255, 0, 0), (a_tech[2] + dynamics.tech_offset_x, a_tech[3] + dynamics.tech_offset_y, Tech.tech_size, Tech.tech_size), 0, 10)
         #don't draw any button or rectangle
         pass
-      screen.blit(a_tech[9], (a_tech[2][0] + dynamics.tech_offset_x, a_tech[2][1] + dynamics.tech_offset_y))
-      text(30, a_tech[0], (0, 0, 0), a_tech[2][0] + Tech.tech_size/2 + dynamics.tech_offset_x, a_tech[2][1] + Tech.tech_size/2 - 20 + dynamics.tech_offset_y, alignx = "center", aligny = "center")
-      text(50, str(a_tech[1]), money_color, a_tech[2][0] + Tech.tech_size/2 + dynamics.tech_offset_x, a_tech[2][1] + Tech.tech_size/2 + 15 + dynamics.tech_offset_y, alignx = "center", aligny = "center")
-      if a_tech[3] != None:
-        pygame.draw.line(screen, (0, 0, 0), (a_tech[2][0] + Tech.tech_size/2 + dynamics.tech_offset_x, a_tech[2][1] + Tech.tech_size + dynamics.tech_offset_y), (a_tech[3][2][0] + Tech.tech_size/2 + dynamics.tech_offset_x, a_tech[3][2][1] + dynamics.tech_offset_y), width = 5)
+      screen.blit(a_tech["img"], (a_tech["coords"][0] + dynamics.tech_offset_x, a_tech["coords"][1] + dynamics.tech_offset_y))
+      text(30, a_tech["name"], (0, 0, 0), a_tech["coords"][0] + Tech.tech_size/2 + dynamics.tech_offset_x, a_tech["coords"][1] + Tech.tech_size/2 - 20 + dynamics.tech_offset_y, alignx = "center", aligny = "center")
+      text(50, str(a_tech["cost"]), money_color, a_tech["coords"][0] + Tech.tech_size/2 + dynamics.tech_offset_x, a_tech["coords"][1] + Tech.tech_size/2 + 15 + dynamics.tech_offset_y, alignx = "center", aligny = "center")
+      if a_tech["preceding tech"] != None:
+        pygame.draw.line(screen, (0, 0, 0), (a_tech["coords"][0] + Tech.tech_size/2 + dynamics.tech_offset_x, a_tech["coords"][1] + Tech.tech_size + dynamics.tech_offset_y), (a_tech["preceding tech"]["coords"][0] + Tech.tech_size/2 + dynamics.tech_offset_x, a_tech["preceding tech"]["coords"][1] + dynamics.tech_offset_y), width = 5)
       
     clock.tick(FPS)
     text(20, "FPS: " + str(clock.get_fps()), (0, 0, 0), 300, 0, alignx="center")

@@ -26,31 +26,31 @@ class Unit(Entity):
   steeler_img = pygame.image.load("../unit/steeler.png").convert_alpha()
   unit_max_stack = 3
   img_dict = {"Man":man_img, "Rider":rider_img, "Knight":knight_img, "Elephant":elephant_img, "Swordsman":swordsman_img, "Spearman":spearman_img, "Axeman":axeman_img, "Shieldman":shieldman_img, "Archer":archer_img, "Crossbowman":crossbowman_img, "Field Medic":field_medic_img, "Ship":ship_img, "Steeler":steeler_img}
-  def __init__(self, location: Location, stats: List[Any], coords: Tuple[int, int], player_number, current_health: int = 0):
-    self.name = stats[0]
+  def __init__(self, location: Location, stats: Dict, coords: Tuple[int, int], player_number, current_health: int = -1):
+    self.name = stats["name"]
     super().__init__(player_number, coords, pygame.image.load("../unit/"+str(self.name).lower()+".png").convert_alpha())
     #get stats from list
-    if current_health != 0:
+    if current_health != -1:
       self.health = current_health
     else:
-      self.health = stats[1]
-    self.max_health = stats[1]
-    self.regen_value = stats[2]
-    self.attack = stats[3]
-    self.defense = stats[4]
-    self.range = stats[5]
-    self.movement = stats[6]
-    self.cost = stats[7]
+      self.health = stats["health"]
+    self.max_health = stats["health"]
+    self.regen_value = stats["regen"]
+    self.attack = stats["attack"]
+    self.defense = stats["defense"]
+    self.range = stats["range"]
+    self.movement = stats["movement"]
+    self.cost = stats["cost"]
     #cost is [wood, metal, food, water]
-    self.timer = stats[8]
-    self.action_sequences = stats[9]
-    self.abilities = stats[10]
+    self.timer = stats["time"]
+    self.action_sequences = stats["sequences"]
+    self.abilities = stats["abilities"]
     #all image names should be unit name + .png eg. man.png
     self.turn_done = False
     self.action_sequence = []
     self.action = None
-    self.action_index = 0
-    #action_index starts at 0
+    self.action_index = -1
+    #action_index starts at -1
     self.action_range = [self.coords]
     #moverange is a list of all the adjacent hexes that the unit can be moved to
     location.unit = self
@@ -67,16 +67,6 @@ class Unit(Entity):
       self.calculate_action_range(map)
     except IndexError:
       self.unit_reset()
-  def calculate_damage(self, defender: 'Unit') -> int:
-    attack_damage = (self.health/self.max_health)*self.attack
-    defend_damage = (defender.health/defender.max_health)*defender.defense
-    #3 will affect the general damage of all attacks
-    #attack_damage *= 3
-    #no damage scaler
-    damage = attack_damage/defend_damage
-    if damage < 0:
-      damage = 0
-    return round(damage)
   def do_action(self, object: Any, map: Map) -> None:
     #calculate the ranges in calculate_action_range, and actually do the action here
     if self.action == "move" and type(object) == Location:
@@ -107,11 +97,11 @@ class Unit(Entity):
       if object.coords in self.action_range:
         print("successful attack", type(object))
         #the attack is valid, so we move on to the next action
-        for counter in range(self.calculate_damage(object)):
+        for counter in range(Unit.calculate_damage(self, object)):
           dynamics.animation_list.append(damageAnimation((object.display_coords[0] + Unit.unit_size/2 + dynamics.offset_x - damageAnimation.img_size/2, object.display_coords[1] + Unit.unit_size/2 + dynamics.offset_y - damageAnimation.img_size/2)))
           print("animation created")
         #make the targeted_unit lose health
-        object.health -= self.calculate_damage(object)
+        object.health -= Unit.calculate_damage(self, object)
         if object.health <= 0:
           map.return_tile(object.coords).unit = None
           dynamics.player_list[object.player_number].units.remove(object) #kill unit by removing all pointers
@@ -219,3 +209,13 @@ class Unit(Entity):
     else:
         pygame.draw.circle(screen, (125, 125, 125), (self.display_coords[0] + dynamics.offset_x, self.display_coords[1] + dynamics.offset_y), availability_marker_size)
     text(30, str(self.player_number + 1), (0, 0, 0), self.display_coords[0] + dynamics.offset_x, self.display_coords[1] + dynamics.offset_y, alignx = "center", aligny = "center")
+  def calculate_damage(attacker: 'Unit', defender: 'Unit') -> int:
+    attack_damage = (attacker.health/attacker.max_health)*attacker.attack
+    defend_damage = (defender.health/defender.max_health)*defender.defense
+    #3 will affect the general damage of all attacks
+    #attack_damage *= 3
+    #no damage scaler
+    damage = attack_damage/defend_damage
+    if damage < 0:
+      damage = 0
+    return round(damage)

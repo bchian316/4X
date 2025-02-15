@@ -21,16 +21,10 @@ class Animation:
       sprite = dynamics.animation_list[deletion_counter]
       if isinstance(sprite, resourceAnimation):
         if rect_collided(sprite.start[0], sprite.start[1], sprite.img_size, sprite.img_size, sprite.target[0], sprite.target[1], sprite.targetsize, sprite.targetsize):
-          if sprite.value == "money":
+          if(sprite.value == "money"):
             dynamics.player_list[current_player].money += 1
-          elif sprite.value == "wood":
-            dynamics.player_list[current_player].wood += 1
-          elif sprite.value == "metal":
-            dynamics.player_list[current_player].metal += 1
-          elif sprite.value == "food":
-            dynamics.player_list[current_player].food += 1
-          elif sprite.value == "water":
-            dynamics.player_list[current_player].water += 1
+          else:
+            dynamics.player_list[current_player].resources[sprite.value] += 1
           dynamics.animation_list.pop(deletion_counter)
           continue
       elif isinstance(sprite, damageAnimation):

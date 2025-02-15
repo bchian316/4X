@@ -1,5 +1,5 @@
 from location import *
-from stats import man, ship
+from stats import man
 class Player:
   #contains all the players
   player_list = []
@@ -26,11 +26,8 @@ class Player:
     #player number determines the order the players play in starting from 0 not 1
     self.player_number = player_number
     self.color = (randint(0, 255), randint(0, 255), randint(0, 255))
-    self.money = 10000 #0
-    self.wood = 10000 #0
-    self.metal = 10000 #0
-    self.food = 10000 #0
-    self.water = 10000 #0
+    self.money = 0
+    self.resources = {"wood": 0, "metal": 0, "food": 0, "water": 0}
     self.units = []
     self.buildings = []
     self.cities = []
@@ -42,7 +39,6 @@ class Player:
     self.available_actions = []
     #available player actions
     self.available_units = [man]
-    self.available_naval_units = [ship]
     #available terrain the player's units can be on
     self.available_terrain = ["plains", "forest", "fertile land"]
   def display_units(self, availability_marker_size: int = 10) -> None:
@@ -99,18 +95,18 @@ class Player:
     if action == "chop":
       #get wood by cutting down forest into plains
       #location must be at forest tile
-      self.wood += 5
+      self.resources["wood"] += 5
       if location.terrain == "forest":
         location.terrain = "plains"
       elif location.terrain == "dense forest":
         location.terrain = "forest"
     elif action == "cultivate":
-      self.food += 3
+      self.resources["food"] += 3
     elif action == "refine":
-      self.metal += 20
+      self.resources["metal"] += 20
       location.features.remove("mineral")
     elif action == "extract":
-      self.metal += 10
+      self.resources["metal"] += 10
       location.features.remove("ore")
     elif action == "grow":
       #grow forest from plains
@@ -122,9 +118,9 @@ class Player:
       location.terrain = "fertile land"
     elif action == "reap":
       location.terrain = "plains"
-      self.food += 12
+      self.resources["food"] += 12
     if action == "collect":
-      self.water += 5
+      self.resources["water"] += 5
       location.terrain = "plains"
     location.image = Location.img_dict[location.terrain]
     location.player_acted_on = True
@@ -148,14 +144,22 @@ class Player:
       city.spawn_timer -= city.max_spawn_timer
       if city.spawn_timer < 0:
         city.spawn_timer = 0
-  def deduct_costs(self, amounts: List[int]) -> None:
+  def can_afford(self, amounts: Dict) -> bool:
+    for resource in self.resources.keys():
+      if self.resources[resource] < amounts[resource]:
+        return False
+    return True
+  def deduct_costs(self, amounts: Dict) -> None:
     #amounts is a list containing [wood, metal, food, water]
     #if deduct is True, subtract the resources, otherwise, add them
-    self.wood -= amounts[0]
-    self.metal -= amounts[1]
-    self.food -= amounts[2]
-    self.water -= amounts[3]
+    for resource in self.resources.keys():
+      self.resources[resource] -= amounts[resource]
   def owns_unit_there(self, location: Location) -> bool:
     if(location.unit != None and location.unit.player_number == self.player_number):
       return True
+    return False
+  def owns_tech(self, tech: Dict) -> bool:
+    for i in self.techs:
+      if i.name == tech["name"]:
+        return True
     return False

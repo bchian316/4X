@@ -14,7 +14,7 @@ class Location:
   ore_img = pygame.image.load("../terrain/ore.png").convert_alpha()
   deposit_x = 15
   deposit_y = 15
-  def __init__(self, coords: Tuple[int, int], terrain: str, features: List[str], deposit: Tuple[int, int, int, int]):
+  def __init__(self, coords: Tuple[int, int], terrain: str, features: List[str], deposit: Dict):
     self.terrain = terrain
     if self.terrain: #if terrain is not a void
       self.image = Location.img_dict[self.terrain]
@@ -40,30 +40,18 @@ class Location:
       screen.blit(Location.mineral_img, coords)
     if "ore" in self.features:
       screen.blit(Location.ore_img, coords)
-    for resource_type in enumerate(self.deposit):
-      #resource_type[0] is the x coord, resource is the y coord
-      for resource in range(resource_type[1]):
-        if resource_type[0] == 0:
-          screen.blit(wood_resource_img, (coords[0] + resource_type[0]*Location.deposit_x + 15, coords[1] + ((hex_size/2)*sqrt(3))/2 + resource*Location.deposit_y - resource_type[1]*Location.deposit_y/2))
-        elif resource_type[0] == 1:
-          screen.blit(metal_resource_img, (coords[0] + resource_type[0]*Location.deposit_x + 15, coords[1] + ((hex_size/2)*sqrt(3))/2 + resource*Location.deposit_y - resource_type[1]*Location.deposit_y/2))
-        elif resource_type[0] == 2:
-          screen.blit(food_resource_img, (coords[0] + resource_type[0]*Location.deposit_x + 15, coords[1] + ((hex_size/2)*sqrt(3))/2 + resource*Location.deposit_y - resource_type[1]*Location.deposit_y/2))
-        elif resource_type[0] == 3:
-          screen.blit(water_resource_img, (coords[0] + resource_type[0]*Location.deposit_x + 15, coords[1] + ((hex_size/2)*sqrt(3))/2 + resource*Location.deposit_y - resource_type[1]*Location.deposit_y/2))
+    if self.deposit != None:
+      for resource in self.deposit.keys():
+        #resource_type[0] is the x coord, resource is the y coord
+        for resource in range(self.deposit[resource]):
+          pass
   def display_stats(self, x, y):
     #do some text for features and name of terrain and stuff
     screen.blit(self.image, (x, y))
     text(20, self.terrain.capitalize(), (0, 0, 0), x + 44, y - 25, alignx="center")
   def give_deposit(self):
-    if self.deposit != (0, 0, 0, 0):
-      animation_coords = coordConvert(self.coords, returnCenter=True)
-      for _ in range(self.deposit[0]):
-        dynamics.animation_list.append(resourceAnimation("wood", resourceAnimation.resourceAnimationCoords(self.coords), (SCREENLENGTH - 12.5, 87.5), 25))
-      for _ in range(self.deposit[1]):
-        dynamics.animation_list.append(resourceAnimation("metal", resourceAnimation.resourceAnimationCoords(self.coords), (SCREENLENGTH - 12.5, 112.5), 25))
-      for _ in range(self.deposit[2]):
-        dynamics.animation_list.append(resourceAnimation("food", resourceAnimation.resourceAnimationCoords(self.coords), (SCREENLENGTH - 12.5, 137.5), 25))
-      for _ in range(self.deposit[3]):
-        dynamics.animation_list.append(resourceAnimation("water", resourceAnimation.resourceAnimationCoords(self.coords), (SCREENLENGTH - 12.5, 162.5), 25))
-      self.deposit = (0, 0, 0, 0)
+    if self.deposit != None:
+      for resource in self.deposit.keys():
+        for animation in range(self.deposit[resource]):
+          dynamics.animation_list.append(resourceAnimation(resource, resourceAnimation.resourceAnimationCoords(self.coords), (SCREENLENGTH - 12.5, 87.5), 25))
+      self.deposit = None

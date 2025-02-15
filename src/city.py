@@ -14,7 +14,7 @@ class City(Entity):
     self.level = level
     super().__init__(player_number, coords, pygame.image.load("../city/"+str(self.level)+".png").convert_alpha())
     self.income = self.level * 5
-    self.cost = [self.level**2, self.level**2, self.level**2, self.level**2]
+    self.cost = {"wood": self.level**2, "metal": self.level**2, "food": self.level**2, "water": self.level**2}
     #prevent unit spamming
     self.spawn_timer = 0
     self.max_spawn_timer = self.level * 10
@@ -29,7 +29,7 @@ class City(Entity):
     self.level += 1
     self.income = self.level * 5
     dynamics.player_list[self.player_number].deduct_costs(self.cost)
-    self.cost = [self.level**2, self.level**2, self.level**2, self.level**2]
+    self.cost = {"wood": self.level**2, "metal": self.level**2, "food": self.level**2, "water": self.level**2}
     self.max_spawn_timer = self.level * 10
     self.image = pygame.image.load("../city/"+str(self.level)+".png").convert_alpha()
   def display_stats(self, x: int, y: int, text_display_size: int = 20) -> None:

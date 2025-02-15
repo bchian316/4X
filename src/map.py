@@ -15,10 +15,7 @@ class Map:
                     features.append("mineral")
                 if (coordx, coordy) in ORE:
                     features.append("ore")
-                if randint(1, 10) == 1 and tile[1] != "":
-                    deposit = (randint(0, 5), randint(0, 5), randint(0, 5), randint(0, 5))
-                else:
-                    deposit = (0, 0, 0, 0)
+                deposit = {"wood": randint(0, 5), "metal": randint(0, 5), "food": randint(0, 5), "water": randint(0, 5)}
                 self.map[coordy].append(Location((coordx, coordy), tile[1], features, deposit))
     def display_map_hex(self) -> None:
         #use offsets to move the entire map around
