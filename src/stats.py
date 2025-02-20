@@ -12,7 +12,7 @@ crossbowman = {"name": "Crossbowman", "health": 5, "regen": 2, "attack": 15, "de
 field_medic = {"name": "Field Medic", "health": 10, "regen": 10, "attack": 0, "defense": 2, "range": 1, "movement": 1, "cost": {"wood": 3, "metal": 1, "food": 2, "water": 3}, "time": 8, "sequences": (('move', 'heal other'), ('move', 'heal')), "abilities": ()}
 rider = {"name": "Rider", "health": 9, "regen": 5, "attack": 7, "defense": 2, "range": 1, "movement": 3, "cost": {"wood": 0, "metal": 0, "food": 3, "water": 0}, "time": 12, "sequences": (('move', 'attack'), ('move', 'heal')), "abilities": ()}
 knight = {"name": "Knight", "health": 13, "regen": 6, "attack": 7, "defense": 1, "range": 1, "movement": 3, "cost": {"wood": 2, "metal": 4, "food": 6, "water": 3}, "time": 18, "sequences": (('move', 'attack'), ('attack', 'move'), ('heal',)), "abilities": ()}
-elephant = {"name": "Elephant", "health": 16, "regen": 6, "attack": 15, "defense": 2, "range": 1, "movement": 3, "cost": {"wood": 5, "metal": 3, "food": 10, "water": 7}, "time": 30, "sequences": (('move', 'attack', 'heal')), "abilities": ()}
+elephant = {"name": "Elephant", "health": 16, "regen": 6, "attack": 15, "defense": 2, "range": 1, "movement": 3, "cost": {"wood": 5, "metal": 3, "food": 10, "water": 7}, "time": 30, "sequences": (('move', 'attack', 'heal'),), "abilities": ()}
 
 #building stats
 #var = ("name", list, cost, production, production speed, possible terrain, abilities, upgrade into)
@@ -23,7 +23,7 @@ shipyard = {"name": "Shipyard", "cost": {"wood": 4, "metal": 3, "food": 5, "wate
 pipelines = {"name": "Pipelines", "cost": {"wood": 3, "metal": 3, "food": 6, "water": 5}, "production": {"wood": 0, "metal": 0, "food": 0, "water": 20}, "production time": 3, "terrain": None, "abilities": (), "upgraded building": None}
 aqueduct = {"name": "Aqueduct", "cost": {"wood": 2, "metal": 3, "food": 2, "water": 5}, "production": {"wood": 0, "metal": 0, "food": 0, "water": 5}, "production time": 2, "terrain": 'water', "abilities": (), "upgraded building": pipelines}
 plantation = {"name": "Plantation", "cost": {"wood": 8, "metal": 4, "food": 6, "water": 7}, "production": {"wood": 0, "metal": 0, "food": 20, "water": 0}, "production time": 1, "terrain": None, "abilities": (), "upgraded building": None}
-farm = {"name": "Farm", "cost": {"wood": 0, "metal": 1, "food": 9, "water": 7}, "production": {"wood": 0, "metal": 0, "food": 10, "water": 0}, "production time": 1, "terrain": 'fertile land', "abilities": (), "upgraded building": plantation}
+farm = {"name": "Farm", "cost": {"wood": 0, "metal": 1, "food": 9, "water": 7}, "production": {"wood": 0, "metal": 0, "food": 10, "water": 0}, "production time": 1, "terrain": 'crop', "abilities": (), "upgraded building": plantation}
 
 #tech = ("Tech", price, x, y, preceding_tech, unit, building, upgraded building, player action, terrain, img)
 logging = {"name": "Logging", "cost": 5, "coords": (50, 500), "preceding tech": None, "type": "player action", "new": "chop"}

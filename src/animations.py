@@ -13,7 +13,7 @@ class Animation:
     except:
       pass
     #the blit coords will be where the img center is
-    screen.blit(self.img, (self.start[0] - self.img_size/2, self.start[1] - self.img_size/2))
+    screen.blit(self.img, (self.start[0], self.start[1]))
   def destroyAnimation(current_player) -> None:
     deletion_counter = 0
     while deletion_counter < len(dynamics.animation_list):
@@ -38,12 +38,21 @@ class resourceAnimation(Animation):
   animation_range = 80
   img_size = 25
   img_dict = {"money":money_resource_img, "wood":wood_resource_img, "metal":metal_resource_img, "food":food_resource_img, "water":water_resource_img}
-  def __init__(self, value: str, start: Tuple[int, int], target: Tuple[int, int], targetsize: int):
+  def __init__(self, value: str, start: Tuple[int, int], targetsize: int):
     #value should be a list containing the resource of the thing
     self.value = value
     self.img = resourceAnimation.img_dict[self.value]
     super().__init__(start, self.img, resourceAnimation.img_size)
-    self.target = target
+    if self.value == "money":
+      self.target = (SCREENLENGTH-resourceAnimation.img_size, bank_y)
+    elif self.value == "wood":
+      self.target = (SCREENLENGTH-resourceAnimation.img_size, bank_y + 25)
+    if self.value == "metal":
+      self.target = (SCREENLENGTH-resourceAnimation.img_size, bank_y + 50)
+    if self.value == "food":
+      self.target = (SCREENLENGTH-resourceAnimation.img_size, bank_y + 75)
+    if self.value == "water":
+      self.target = (SCREENLENGTH-resourceAnimation.img_size, bank_y + 100)
     self.targetsize = targetsize
     #make velocity inversely proportional to distance, so if the animation starts farther away, it travels faster
     self.velx, self.vely = get_vel(self.start[0], self.start[1], self.target[0], self.target[1], (sqrt((self.start[0]-self.target[0])**2 + (self.start[1]-self.target[1])**2))/resourceAnimation.speed_offset)

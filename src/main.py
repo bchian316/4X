@@ -265,7 +265,7 @@ while True:
 
     #display player_number
     text(25, str("Player " + str(dynamics.current_player + 1)) + " turn", current_player.color, SCREENLENGTH, 0, alignx = "right")
-    display_resources(current_player.resources, SCREENLENGTH - 25, 50, money = current_player.money, display_all = True, size = 40)
+    display_resources(current_player.resources, SCREENLENGTH - 25, bank_y, money = current_player.money, display_all = True, size = 40)
 
     #can only choose unit sequence or do actions if unit turn is not over
     if isinstance(dynamics.selected_object, Unit) and dynamics.selected_object.owned_by_current_player() and not dynamics.selected_object.turn_done:
@@ -354,7 +354,7 @@ while True:
         #a_building_type is a list containing the stats of a building
         if dynamics.selected_object.building == None and dynamics.selected_object.city == None and current_player.owns_unit_there(dynamics.selected_object) and dynamics.selected_object.terrain == building_type[1]["terrain"]:
           #if there is no other building there and u own a dude that is there and the terrain is in the building's terrain list and there is no city there
-          if button(SCREENLENGTH - Building.building_size*2, 200 + building_type[0] * (Building.building_size*2), Building.building_size*2, Building.building_size*2, 10, stroke = 0, available = current_player.can_afford(building_type[1]["cost"]), frames = building_button_frames):
+          if button(SCREENLENGTH - Building.building_size*2, 200, Building.building_size*2, Building.building_size*2, 10, stroke = 0, available = current_player.can_afford(building_type[1]["cost"]), frames = building_button_frames):
             #build building and subtract resources
             print(building_type[1]["name"] + " is built")
             current_player.deduct_costs(building_type[1]["cost"])
@@ -362,10 +362,10 @@ while True:
             current_player.buildings.append(new_building)
             del(new_building)
           #display the building images on the buttons
-          screen.blit(Building.img_dict[building_type[1]["name"]], (SCREENLENGTH - Building.building_size*2 + 25, 250 + building_type[0] * (Building.building_size*2)))
-          text(20, building_type[1]["name"], (0, 0, 0), SCREENLENGTH - 150, 200 + building_type[0] * (Building.building_size*2))
-          text(20, "Terrain: " + building_type[1]["terrain"], (0, 0, 0), SCREENLENGTH - 150, 210 + building_type[0] * (Building.building_size*2))
-          display_resources(building_type[1]["cost"], SCREENLENGTH - 25, 250 + building_type[0] * (Building.building_size*2))
+          screen.blit(Building.img_dict[building_type[1]["name"]], (SCREENLENGTH - Building.building_size*2 + 25, 250))
+          text(20, building_type[1]["name"], (0, 0, 0), SCREENLENGTH - 150, 200)
+          text(20, "Terrain: " + building_type[1]["terrain"], (0, 0, 0), SCREENLENGTH - 150, 210)
+          display_resources(building_type[1]["cost"], SCREENLENGTH - 25, 250)
 
       #do player action    
       for player_action in enumerate(current_player.available_actions):

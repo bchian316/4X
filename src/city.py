@@ -24,7 +24,7 @@ class City(Entity):
     #run this in the end_turn button clicked
     #add for loop for animation
     for _ in range(self.income):
-      dynamics.animation_list.append(resourceAnimation("money", resourceAnimation.resourceAnimationCoords(self.coords), (SCREENLENGTH - 12.5, 62.5), 25))
+      dynamics.animation_list.append(resourceAnimation("money", resourceAnimation.resourceAnimationCoords(self.coords), 25))
   def upgrade(self) -> None:
     self.level += 1
     self.income = self.level * 5

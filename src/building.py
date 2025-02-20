@@ -43,7 +43,7 @@ class Building(Entity):
       self.production_timer = 0
       for resource in self.production.keys():
         for animation in range(self.production[resource]):
-          dynamics.animation_list.append(resourceAnimation(resource, resourceAnimation.resourceAnimationCoords(self.coords), (SCREENLENGTH - 12.5, 87.5), 25))
+          dynamics.animation_list.append(resourceAnimation(resource, resourceAnimation.resourceAnimationCoords(self.coords), 25))
   def display_stats(self, x: int, y: int, text_display_size: int = 20) -> None:
     #change these to imgs later
     screen.blit(self.image, (x, y))

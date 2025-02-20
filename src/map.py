@@ -15,8 +15,7 @@ class Map:
                     features.append("mineral")
                 if (coordx, coordy) in ORE:
                     features.append("ore")
-                deposit = {"wood": randint(0, 5), "metal": randint(0, 5), "food": randint(0, 5), "water": randint(0, 5)}
-                self.map[coordy].append(Location((coordx, coordy), tile[1], features, deposit))
+                self.map[coordy].append(Location((coordx, coordy), tile[1], features))
     def display_map_hex(self) -> None:
         #use offsets to move the entire map around
         for row in self.map:
@@ -73,4 +72,16 @@ class Map:
         point4 = (center_x + hex_size*sqrt(3)/4, center_y + hex_size/4)
         point5 = (center_x, center_y + hex_size/2)
         point6 = (center_x - hex_size*sqrt(3)/4, center_y + hex_size/4)
-        pygame.draw.polygon(transparent_screen, color, [point1, point2, point3, point4, point5, point6])
+        points = (point1, point2, point3, point4, point5, point6)
+        pygame.draw.polygon(transparent_screen, color, points)
+        '''for i in enumerate(points):
+            pygame.draw.line(screen, color, i[1], points[i[0]-1], 10)'''
+        #top diagonal lines
+        pygame.draw.line(screen, color, (point1[0], point1[1] + shade_width/2), (point2[0], point2[1] + shade_width/2), shade_width)
+        pygame.draw.line(screen, color, (point3[0], point3[1] + shade_width/2), (point2[0], point2[1] + shade_width/2), shade_width)
+        #bottom diagonal lines
+        pygame.draw.line(screen, color, (point4[0], point4[1] - shade_width/2), (point5[0], point5[1] - shade_width/2), shade_width)
+        pygame.draw.line(screen, color, (point6[0], point6[1] - shade_width/2), (point5[0], point5[1] - shade_width/2), shade_width)
+        #vertical lines
+        pygame.draw.line(screen, color, (point1[0] + shade_width/2, point1[1]), (point6[0] + shade_width/2, point6[1]), shade_width)
+        pygame.draw.line(screen, color, (point3[0] - shade_width/2, point3[1]), (point4[0] - shade_width/2, point4[1]), shade_width)

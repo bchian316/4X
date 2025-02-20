@@ -26,8 +26,8 @@ class Player:
     #player number determines the order the players play in starting from 0 not 1
     self.player_number = player_number
     self.color = (randint(0, 255), randint(0, 255), randint(0, 255))
-    self.money = 0
-    self.resources = {"wood": 0, "metal": 0, "food": 0, "water": 0}
+    self.money = 449
+    self.resources = {"wood": 5, "metal": 5, "food": 5, "water": 5}
     self.units = []
     self.buildings = []
     self.cities = []
@@ -40,7 +40,7 @@ class Player:
     #available player actions
     self.available_units = [man]
     #available terrain the player's units can be on
-    self.available_terrain = ["plains", "forest", "fertile land"]
+    self.available_terrain = ["plains", "forest", "crop"]
   def display_units(self, availability_marker_size: int = 10) -> None:
     #this displays a list of specific units (a unit type)
     #units would be a list containing a specific unit type
@@ -70,7 +70,7 @@ class Player:
       if location.terrain == "forest" or location.terrain == "dense forest":
         return True
     elif action == "cultivate":
-      if location.terrain == "fertile land":
+      if location.terrain == "crop":
         return True
     elif action == "refine":
       if "mineral" in location.features:
@@ -85,7 +85,7 @@ class Player:
       if location.terrain == "plains":
         return True
     elif action == "reap":
-      if location.terrain == "fertile land":
+      if location.terrain == "crop":
         return True
     elif action == "collect":
       if location.terrain == "water":
@@ -115,7 +115,7 @@ class Player:
       if location.terrain == "forest":
         location.terrain = "dense forest"
     elif action == "fertilize":
-      location.terrain = "fertile land"
+      location.terrain = "crop"
     elif action == "reap":
       location.terrain = "plains"
       self.resources["food"] += 12

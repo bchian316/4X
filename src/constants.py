@@ -26,6 +26,7 @@ flags = pygame.DOUBLEBUF
 # Set the display mode on the chosen display
 screen = pygame.display.set_mode((SCREENLENGTH, SCREENHEIGHT), flags=flags, display=display_index)# Game code goes here
 player_alpha_shade = 70
+shade_width = 10 #for shadeTile method
 transparent_screen = pygame.Surface((SCREENLENGTH, SCREENHEIGHT), pygame.SRCALPHA)
 transparent_screen.set_alpha(player_alpha_shade)
 #make sure transparent_screen.blit goes below all displays that are drawn on it
@@ -51,8 +52,8 @@ resource_imgs = {"wood": wood_resource_img, "metal": metal_resource_img, "food":
 #it will show the terrain of every tile in the game
 #MAP = [4 items, 5 items, 6, 7, 6, 5, 4] because there is a side length of 4
 TERRAIN = (("mountain", "mountain", "mountain", "plains", "water", "water", "ocean", "", "", "", ""), 
-       ("mountain", "mountain", "fertile land", "forest", "fertile land", "water", "ocean", "ocean", "", "", "", "", ""), 
-       ("forest", "mountain", "dense forest", "fertile land", "water", "ocean", "ocean", "ocean", "water", "", "", "", ""), 
+       ("mountain", "mountain", "crop", "forest", "crop", "water", "ocean", "ocean", "", "", "", "", ""), 
+       ("forest", "mountain", "dense forest", "crop", "water", "ocean", "ocean", "ocean", "water", "", "", "", ""), 
        ("plains", "mountain", "dense forest", "water", "water", "forest", "plains", "mountain", "ocean", "ocean", "", "", ""), 
        ("water", "forest", "plains", "dense forest", "water", "mountain", "plains", "water", "mountain", "forest", "forest", "", ""), 
        ("dense forest", "water", "plains", "mountain", "plains", "plains", "mountain", "water", "plains", "forest", "plains", "plains", ""),
@@ -82,6 +83,7 @@ player_action_y = SCREENHEIGHT - 100
 player_action_size = 75
 #when options are listed, start at this x value
 option_x = 425
+bank_y = 50
 selection_frame = pygame.image.load("../frames/selection frame.png").convert_alpha()
 production_frame = pygame.image.load("../frames/production frame.png").convert_alpha()
 

@@ -40,7 +40,7 @@ def get_vel(x1: int, y1: int, x2: int, y2: int, speed: int) -> Tuple[float, floa
   return velx, vely
 def display_resources(resources: Dict, x: int, y: int, money = 0, display_all: bool = False, size: int = 20) -> None:
   #x is the line between the images and the numbers
-  #resources is [money, wood, metal, food, water]
+  #resources is [wood, metal, food, water]
   display_counter = 0
   cushion = 25
   text_offset_y = 12.5
