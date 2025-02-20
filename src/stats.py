@@ -36,9 +36,7 @@ medicine = {"name": "Medicine", "cost": 20, "coords": (150, 100), "preceding tec
 climbing = {"name": "Climbing", "cost": 5, "coords": (350, 500), "preceding tech": None, "type": "terrain", "new": "mountain"}
 smithery = {"name": "Smithery", "cost": 15, "coords": (350, 300), "preceding tech": climbing, "type": "unit", "new": swordsman}
 sharpening = {"name": "Sharpening", "cost": 25, "coords": (450, 100), "preceding tech": smithery, "type": "unit", "new": spearman}
-armoring_img = pygame.image.load("../tech/armoring.png")
 armoring = {"name": "Armoring", "cost": 25, "coords": (350, 150), "preceding tech": smithery, "type": "unit", "new": shieldman}
-molding_img = pygame.image.load("../tech/molding.png")
 molding = {"name": "Molding", "cost": 30, "coords": (200, 150), "preceding tech": smithery, "type": "unit", "new": axeman}
 mining = {"name": "Mining", "cost": 10, "coords": (475, 300), "preceding tech": climbing, "type": "building", "new": mine}
 smelting = {"name": "Smelting", "cost": 25, "coords": (550, 50), "preceding tech": mining, "type": "upgraded building", "new": foundry}
@@ -58,4 +56,4 @@ fertilization = {"name": "Fertilization", "cost": 20, "coords": (825, 150), "pre
 overharvesting = {"name": "Overharvesting", "cost": 20, "coords": (950, 300), "preceding tech": cultivation, "type": "player action", "new": "reap"}
 all_techs = (logging, trekking, archery, engineering, forestry, reforestation, medicine, climbing, smithery, sharpening, armoring, molding, mining, smelting, extraction, swimming, collection, architecture, waterworks, refinement, cultivation, riding, honor, taming, farming, agriculture, fertilization, overharvesting)
 for tech in all_techs:
-    tech["img"] = pygame.image.load("../tech/" + tech["name"].lower() + ".png").convert_alpha()
+  tech["img"] = pygame.image.load("../tech/" + tech["name"].lower() + ".png").convert_alpha()
